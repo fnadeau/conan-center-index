@@ -8,4 +8,4 @@ conan_basic_setup(TARGETS)
 find_package(gst-plugins-ugly CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} test_package.cpp)
-target_link_libraries(${PROJECT_NAME} gst-plugins-ugly::gst-plugins-ugly)
+target_link_libraries(${PROJECT_NAME} gst-plugins-ugly::gst-plugins-ugly gst-plugins-base::gstreamer-pbutils-1.0)

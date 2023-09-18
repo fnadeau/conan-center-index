@@ -1,6 +1,7 @@
 from conans import ConanFile, tools, Meson, VisualStudioBuildEnvironment
 from conans.errors import ConanInvalidConfiguration
 from conan.tools.microsoft import msvc_runtime_flag
+from conan.tools.scm import Version
 import glob
 import os
 import shutil
@@ -63,21 +64,22 @@ class GStPluginsGoodConan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        self.requires("glib/2.70.0")
-        self.requires("gstreamer/1.19.1")
-        self.requires("gst-plugins-base/1.19.1")
+        self.requires("glib/2.77.3")
+        self.requires("libpng/1.6.40")
+        self.requires("gstreamer/%s" % self.version)
+        self.requires("gst-plugins-base/%s" % self.version)
 
     def build_requirements(self):
-        self.build_requires("meson/0.54.2")
+        self.build_requires("meson/1.2.1")
         if not tools.which("pkg-config"):
-            self.build_requires("pkgconf/1.7.4")
+            self.build_requires("pkgconf/2.0.2")
         if self.settings.os == 'Windows':
             self.build_requires("winflexbison/2.5.24")
         else:
-            self.build_requires("bison/3.7.6")
+            self.build_requires("bison/3.8.2")
             self.build_requires("flex/2.6.4")
         if self.options.with_introspection:
-            self.build_requires("gobject-introspection/1.68.0")
+            self.build_requires("gobject-introspection/1.72.0")
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
@@ -108,12 +110,12 @@ class GStPluginsGoodConan(ConanFile):
                 add_compiler_flag("-Dsnprintf=_snprintf")
         if self.settings.get_safe("compiler.runtime"):
             defs["b_vscrt"] = str(self.settings.compiler.runtime).lower()
-        defs["tools"] = "disabled"
+        #defs["tools"] = "disabled"
         defs["examples"] = "disabled"
-        defs["benchmarks"] = "disabled"
+        #defs["benchmarks"] = "disabled"
         defs["tests"] = "disabled"
         defs["wrap_mode"] = "nofallback"
-        defs["introspection"] = "enabled" if self.options.with_introspection else "disabled"
+        #defs["introspection"] = "enabled" if self.options.with_introspection else "disabled"
         meson.configure(build_folder=self._build_subfolder,
                         source_folder=self._source_subfolder,
                         defs=defs)
@@ -151,34 +153,48 @@ class GStPluginsGoodConan(ConanFile):
 
     def package_info(self):
 
-        plugins = ["alpha", "alphacolor",
+        plugins = ["alaw",
+                   "alpha",
+                   "alphacolor",
                    "apetag",
                    "audiofx",
                    "audioparsers",
                    "auparse",
                    "autodetect",
                    "avi",
+                   "cacasink",
+                   "cairo",
                    "cutter",
                    "debug",
                    "deinterlace",
                    "dtmf",
                    "effectv",
                    "equalizer",
+                   "flac",
                    "flv",
                    "flxdec",
+                   "gdkpixbuf",
                    "goom",
                    "goom2k1",
+                   "gtk",
                    "icydemux",
                    "id3demux",
                    "imagefreeze",
                    "interleave",
                    "isomp4",
-                   "alaw", "mulaw",
+                   "jpeg",
                    "level",
                    "matroska",
                    "monoscope",
+                   "mulaw",
                    "multifile",
                    "multipart",
+                   "navigationtest",
+                   "oss4",
+                   "ossaudio",
+                   "png",
+                   "pulseaudio",
+                   "qmlgl",
                    "replaygain",
                    "rtp",
                    "rtpmanager",
@@ -187,13 +203,19 @@ class GStPluginsGoodConan(ConanFile):
                    "smpte",
                    "spectrum",
                    "udp",
+                   "video4linux2",
                    "videobox",
                    "videocrop",
                    "videofilter",
                    "videomixer",
                    "wavenc",
                    "wavparse",
+                   "ximagesrc",
                    "y4menc"]
+
+
+        if Version(self.version) >= "1.22":
+            plugins.append("xingmux")
 
         gst_plugin_path = os.path.join(self.package_folder, "lib", "gstreamer-1.0")
         if self.options.shared:
@@ -206,4 +228,5 @@ class GStPluginsGoodConan(ConanFile):
             self.cpp_info.libdirs.append(gst_plugin_path)
             self.cpp_info.libs.extend(["gst%s" % plugin for plugin in plugins])
 
-        self.cpp_info.includedirs = ["include", os.path.join("include", "gstreamer-1.0")]
+        # gst-plugins-good doesn't have any public header
+        self.cpp_info.includedirs = []

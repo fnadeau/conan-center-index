@@ -63,24 +63,22 @@ class GStLibAVConan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        self.requires("glib/2.70.1")
-        self.requires("gstreamer/1.19.1")
-        self.requires("gst-plugins-base/1.19.1")
-        self.requires('ffmpeg/4.4')
-        if self.settings.os == 'Linux':
-            self.requires('libalsa/1.2.5.1') # temp - conflict with gst-plugins-base
+        self.requires("glib/2.77.3")
+        self.requires("gstreamer/%s" % self.version)
+        self.requires("gst-plugins-base/%s" % self.version)
+        self.requires('ffmpeg/6.0')
 
     def build_requirements(self):
-        self.build_requires("meson/0.54.2")
+        self.build_requires("meson/1.2.1")
         if not tools.which("pkg-config"):
-            self.build_requires("pkgconf/1.7.4")
+            self.build_requires("pkgconf/2.0.2")
         if self.settings.os == 'Windows':
             self.build_requires("winflexbison/2.5.24")
         else:
-            self.build_requires("bison/3.7.6")
+            self.build_requires("bison/3.8.2")
             self.build_requires("flex/2.6.4")
         if self.options.with_introspection:
-            self.build_requires("gobject-introspection/1.68.0")
+            self.build_requires("gobject-introspection/1.72.0")
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
@@ -111,12 +109,12 @@ class GStLibAVConan(ConanFile):
                 add_compiler_flag("-Dsnprintf=_snprintf")
         if self.settings.get_safe("compiler.runtime"):
             defs["b_vscrt"] = str(self.settings.compiler.runtime).lower()
-        defs["tools"] = "disabled"
-        defs["examples"] = "disabled"
-        defs["benchmarks"] = "disabled"
+        #defs["tools"] = "disabled"
+        #defs["examples"] = "disabled"
+        #defs["benchmarks"] = "disabled"
         defs["tests"] = "disabled"
         defs["wrap_mode"] = "nofallback"
-        defs["introspection"] = "enabled" if self.options.with_introspection else "disabled"
+        #defs["introspection"] = "enabled" if self.options.with_introspection else "disabled"
         meson.configure(build_folder=self._build_subfolder,
                         source_folder=self._source_subfolder,
                         defs=defs)
@@ -167,4 +165,4 @@ class GStLibAVConan(ConanFile):
             self.cpp_info.libdirs.append(gst_plugin_path)
             self.cpp_info.libs.extend(["gst%s" % plugin for plugin in plugins])
 
-        self.cpp_info.includedirs = ["include", os.path.join("include", "gstreamer-1.0")]
+        self.cpp_info.includedirs = []

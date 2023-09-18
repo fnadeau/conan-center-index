@@ -1,6 +1,7 @@
 from conans import ConanFile, tools, Meson, VisualStudioBuildEnvironment
 from conans.errors import ConanInvalidConfiguration
 from conan.tools.microsoft import msvc_runtime_flag
+from conan.tools.scm import Version
 import glob
 import os
 import shutil
@@ -13,17 +14,19 @@ class GStPluginsUglyConan(ConanFile):
     topics = ("gstreamer", "multimedia", "video", "audio", "broadcasting", "framework", "media")
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://gstreamer.freedesktop.org/"
-    license = "GPL-2.0-only"
+    license = "LGPL-2.1-or-later"
     settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
         "with_introspection": [True, False],
+        "with_gpl": [True, False]
         }
     default_options = {
         "shared": False,
         "fPIC": True,
         "with_introspection": False,
+        "with_gpl": False,
         }
     _source_subfolder = "source_subfolder"
     _build_subfolder = "build_subfolder"
@@ -63,21 +66,24 @@ class GStPluginsUglyConan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        self.requires("glib/2.70.1")
-        self.requires("gstreamer/1.19.1")
-        self.requires("gst-plugins-base/1.19.1")
+        self.requires("glib/2.77.3")
+        self.requires("gstreamer/%s" % self.version)
+        self.requires("gst-plugins-base/%s" % self.version)
+
+        if self.options.with_gpl:
+            self.requires("libx264/cci.20220602")
 
     def build_requirements(self):
-        self.build_requires("meson/0.54.2")
+        self.build_requires("meson/1.2.1")
         if not tools.which("pkg-config"):
-            self.build_requires("pkgconf/1.7.4")
+            self.build_requires("pkgconf/2.0.2")
         if self.settings.os == 'Windows':
             self.build_requires("winflexbison/2.5.24")
         else:
-            self.build_requires("bison/3.7.6")
+            self.build_requires("bison/3.8.2")
             self.build_requires("flex/2.6.4")
         if self.options.with_introspection:
-            self.build_requires("gobject-introspection/1.68.0")
+            self.build_requires("gobject-introspection/1.72.0")
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
@@ -108,12 +114,14 @@ class GStPluginsUglyConan(ConanFile):
                 add_compiler_flag("-Dsnprintf=_snprintf")
         if self.settings.get_safe("compiler.runtime"):
             defs["b_vscrt"] = str(self.settings.compiler.runtime).lower()
-        defs["tools"] = "disabled"
-        defs["examples"] = "disabled"
-        defs["benchmarks"] = "disabled"
+        if Version(self.version) < "1.22":
+            defs["tools"] = "disabled"
+            defs["examples"] = "disabled"
+            defs["benchmarks"] = "disabled"
+            defs["introspection"] = "enabled" if self.options.with_introspection else "disabled"
         defs["tests"] = "disabled"
         defs["wrap_mode"] = "nofallback"
-        defs["introspection"] = "enabled" if self.options.with_introspection else "disabled"
+        defs["gpl"] = "enabled" if self.options.with_gpl else "disabled"
         meson.configure(build_folder=self._build_subfolder,
                         source_folder=self._source_subfolder,
                         defs=defs)
@@ -154,8 +162,12 @@ class GStPluginsUglyConan(ConanFile):
         plugins = ["asf",
                    "dvdlpcmdec",
                    "dvdsub",
-                   "realmedia",
-                   "xingmux"]
+                   "realmedia"]
+
+        if Version(self.version) < "1.22":
+            plugins.append("xingmux")
+        if self.options.with_gpl:
+            plugins.append("x264")
 
         gst_plugin_path = os.path.join(self.package_folder, "lib", "gstreamer-1.0")
         if self.options.shared:
@@ -168,4 +180,14 @@ class GStPluginsUglyConan(ConanFile):
             self.cpp_info.libdirs.append(gst_plugin_path)
             self.cpp_info.libs.extend(["gst%s" % plugin for plugin in plugins])
 
-        self.cpp_info.includedirs = ["include", os.path.join("include", "gstreamer-1.0")]
+        self.cpp_info.requires = ["gst-plugins-base::gstreamer-plugins-base-1.0",
+                                  "gst-plugins-base::gstreamer-pbutils-1.0",
+                                  "gst-plugins-base::gstreamer-rtp-1.0",
+                                  "gst-plugins-base::gstreamer-rtsp-1.0",
+                                  "gst-plugins-base::gstreamer-sdp-1.0"]
+    
+        if self.options.with_gpl:
+            self.cpp_info.requires.append("libx264::libx264")
+
+        # gst-plugins-ugly doesn't have any public header
+        self.cpp_info.includedirs = []
