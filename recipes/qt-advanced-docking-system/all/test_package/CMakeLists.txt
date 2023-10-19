@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
-project(PackageTest CXX)
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(test_package CXX)
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-find_package(qt-advanced-docking-system CONFIG REQUIRED)
+find_package(ads CONFIG REQUIRED)
 
-add_executable(example example.cpp)
-target_link_libraries(example qt-advanced-docking-system::qt-advanced-docking-system)
+add_executable(${PROJECT_NAME} example.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE ads::qt5advanceddocking)
