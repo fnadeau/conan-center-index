@@ -2,6 +2,7 @@ from conan import ConanFile
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.files import copy, get, apply_conandata_patches, export_conandata_patches, replace_in_file, rmdir
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
+from conan.tools.microsoft import is_msvc
 from conan.tools.scm import Version
 import os
 
@@ -104,15 +105,16 @@ class QtADS(ConanFile):
 
     def package_info(self):
         # Starting with 4.0.3, libname has QT major version in it
-        libname = "qtadvanceddocking" if Version(self.version) < "4.0.3" else  f"qt{self._qt_major}advanceddocking"
+        target = "qtadvanceddocking" if Version(self.version) < "4.0.3" else  f"qt{self._qt_major}advanceddocking"
+        libname = target + str("d" if is_msvc(self) and self.settings.build_type == "Debug" else "")
 
         self.cpp_info.set_property("cmake_file_name", "ads")
-        self.cpp_info.set_property("cmake_target_name", f"ads::{libname}")
+        self.cpp_info.set_property("cmake_target_name", f"ads::{target}")
         self.cpp_info.requires = ["qt::qtCore", "qt::qtGui", "qt::qtWidgets"]
 
         # Starting with 4.0.3, libs are in include/${library_name}
         if Version(self.version) >= "4.0.3":
-            self.cpp_info.includedirs.append(os.path.join("include", libname))
+            self.cpp_info.includedirs.append(os.path.join("include", target))
 
         if self.options.shared:
             self.cpp_info.libs = [libname]
