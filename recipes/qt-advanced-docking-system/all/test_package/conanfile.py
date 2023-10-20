@@ -17,6 +17,7 @@ class AdsTestConan(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables["ADS_VERSION"] = self.dependencies["qt-advanced-docking-system"].ref.version
+        tc.variables["QT_VERSION"] = self.dependencies["qt"].ref.version
         tc.generate()
 
     def build(self):

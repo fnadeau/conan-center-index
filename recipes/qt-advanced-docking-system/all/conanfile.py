@@ -1,4 +1,5 @@
 from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
 from conan.tools.files import copy, get, apply_conandata_patches, export_conandata_patches, replace_in_file, rmdir
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from conan.tools.scm import Version
@@ -53,11 +54,14 @@ class QtADS(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def requirements(self):
-        self.requires("qt/[>=5.15.7 <6]", transitive_headers=True, transitive_libs=True)
+        self.requires("qt/[>=5.15.7 <7]", transitive_headers=True, transitive_libs=True)
 
     def validate(self):
         if not (self.dependencies["qt"].options.gui and self.dependencies["qt"].options.widgets):
             raise ConanInvalidConfiguration(f"{self.ref} requires qt gui and widgets")
+        
+        if self._qt_major >= 6 and Version(self.version) < "4.0.3":
+            raise ConanInvalidConfiguration(f"qt-advanced-docking-system v{self.version} does not support Qt6")
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
