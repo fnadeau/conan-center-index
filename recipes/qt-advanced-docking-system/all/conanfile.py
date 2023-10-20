@@ -67,7 +67,10 @@ class QtADS(ConanFile):
         tc.cache_variables["ADS_VERSION"] = self.version
         tc.variables["BUILD_EXAMPLES"] = "OFF"
         tc.variables["BUILD_STATIC"] = not self.options.shared
-        tc.variables["QT_VERSION_MAJOR"] = f"{self._qt_major}"
+
+        if Version(self.version) >= "4.0.4":
+            tc.variables["QT_VERSION_MAJOR"] = f"{self._qt_major}"
+
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()
@@ -96,13 +99,19 @@ class QtADS(ConanFile):
         rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
 
     def package_info(self):
+        # Starting with 4.0.3, libname has QT major version in it
+        libname = "qtadvanceddocking" if Version(self.version) < "4.0.3" else  f"qt{self._qt_major}advanceddocking"
+
         self.cpp_info.set_property("cmake_file_name", "ads")
-        self.cpp_info.set_property("cmake_target_name", f"ads::qt{self._qt_major}advanceddocking")
-        self.cpp_info.includedirs.append(os.path.join("include", f"qt{self._qt_major}advanceddocking"))
+        self.cpp_info.set_property("cmake_target_name", f"ads::{libname}")
         self.cpp_info.requires = ["qt::qtCore", "qt::qtGui", "qt::qtWidgets"]
 
+        # Starting with 4.0.3, libs are in include/${library_name}
+        if Version(self.version) >= "4.0.3":
+            self.cpp_info.includedirs.append(os.path.join("include", libname))
+
         if self.options.shared:
-            self.cpp_info.libs = [f"qt{self._qt_major}advanceddocking"]
+            self.cpp_info.libs = [libname]
         else:
             self.cpp_info.defines.append("ADS_STATIC")
-            self.cpp_info.libs = [f"qt{self._qt_major}advanceddocking_static"]
+            self.cpp_info.libs = [f"{libname}_static"]
