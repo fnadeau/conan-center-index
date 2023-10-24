@@ -58,9 +58,11 @@ class QtADS(ConanFile):
         self.requires("qt/[>=5.15.7 <7]", transitive_headers=True, transitive_libs=True)
 
     def validate(self):
-        if not (self.dependencies["qt"].options.gui and self.dependencies["qt"].options.widgets):
-            raise ConanInvalidConfiguration(f"{self.ref} requires qt gui and widgets")
-        
+        if not (self.dependencies["qt"].options.gui and
+                self.dependencies["qt"].options.widgets and
+                self.dependencies["qt"].options.qtsvg):
+            raise ConanInvalidConfiguration(f"{self.ref} requires qt gui, svg and widgets")
+
         if self._qt_major >= 6 and Version(self.version) < "4.0.3":
             raise ConanInvalidConfiguration(f"qt-advanced-docking-system v{self.version} does not support Qt6")
 
@@ -104,13 +106,13 @@ class QtADS(ConanFile):
         rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
 
     def package_info(self):
-        # Starting with 4.0.3, libname has QT major version in it
+        # Starting with 4.0.3, libname has Qt major version in it
         target = "qtadvanceddocking" if Version(self.version) < "4.0.3" else  f"qt{self._qt_major}advanceddocking"
         libname = target + str("d" if is_msvc(self) and self.settings.build_type == "Debug" else "")
 
         self.cpp_info.set_property("cmake_file_name", "ads")
         self.cpp_info.set_property("cmake_target_name", f"ads::{target}")
-        self.cpp_info.requires = ["qt::qtCore", "qt::qtGui", "qt::qtWidgets"]
+        self.cpp_info.requires = ["qt::qtCore", "qt::qtGui", "qt::qtWidgets", "qt::qtSvg"]
 
         # Starting with 4.0.3, libs are in include/${library_name}
         if Version(self.version) >= "4.0.3":
