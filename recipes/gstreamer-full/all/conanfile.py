@@ -325,9 +325,10 @@ class PackageConan(ConanFile):
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://gitlab.freedesktop.org/gstreamer/gstreamer"
     topics = ("audio", "multimedia", "streaming", "video")
-    package_type = "static-library"
+    package_type = "library"
     settings = "os", "arch", "compiler", "build_type"
     options = {
+        "shared": [True, False],
         "with_base": [True, False],
         "with_good": [True, False],
         "with_ugly": [True, False],
@@ -361,6 +362,7 @@ class PackageConan(ConanFile):
     options.update({f'gst_rtsp_server_{_name}': [True, False] for _name in GST_RTSP_SERVER_MESON_OPTIONS})
 
     default_options = {
+        "shared": False,
         "with_base": True,
         "with_good": True,
         "with_ugly": True,
@@ -436,7 +438,8 @@ class PackageConan(ConanFile):
                 delattr(self.options, f'gst_good_{option}')
         if not self.options.with_bad:
             for option in GST_BAD_MESON_OPTIONS:
-                delattr(self.options, f'gst_bad_{option}')
+                if option in self.options:
+                    delattr(self.options, f'gst_bad_{option}')
             for option in GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS:
                 delattr(self.options, f'gst_bad_{option}')
         if not self.options.with_ugly:
@@ -513,8 +516,12 @@ class PackageConan(ConanFile):
 
     def validate(self):
         # TODO validate if still the case
-        if self.dependencies.direct_host["glib"].options.shared:
-            raise ConanInvalidConfiguration("GLib must be built as a static library")
+        if self.dependencies.direct_host["glib"].options.shared and not self.options.shared:
+            raise ConanInvalidConfiguration("static GStreamer cannot link to shared GLib")
+        
+        if not self.dependencies.direct_host["glib"].options.shared and self.options.shared:
+            # https://gitlab.freedesktop.org/gstreamer/gst-build/-/issues/133
+            raise ConanInvalidConfiguration("shared GStreamer cannot link to static GLib")
 
         # Need rework, do we even need this???
         #if not self.options.get_safe("gst_base_gl") and (self.options.get_safe("gst_base_gl_graphene") or self.options.get_safe("gst_base_gl_jpeg") != "disabled" or self.options.get_safe("gst_base_gl_png")):
@@ -653,9 +660,11 @@ class PackageConan(ConanFile):
 
         tc = MesonToolchain(self)
         tc.project_options["auto_features"] = "disabled"
-        tc.project_options["default_library"] = "static" # gstreamer-full is only in static
-        tc.project_options["gst-full"] = "enabled"
-        tc.project_options["gst-full-target-type"] = "static_library"
+
+        if not self.options.shared:
+            tc.project_options["default_library"] = "static" # gstreamer-full is only in static
+            tc.project_options["gst-full"] = "enabled"
+            tc.project_options["gst-full-target-type"] = "static_library"
 
         # GStreamer subprojects
         tc.project_options["base"] = "enabled" if self.options.with_base else "disabled"
@@ -774,7 +783,8 @@ class PackageConan(ConanFile):
         self.cpp_info.components[f"gst{lib}"].libdirs = [os.path.join(self.package_folder, "lib", "gstreamer-1.0")]
         self.cpp_info.components[f"gst{lib}"].requires = requires
         self.cpp_info.components[f"gst{lib}"].system_libs = system_libs
-        self.cpp_info.components[f"gst{lib}"].defines = ["GST_STATIC_COMPILATION"]
+        if not self.options.shared:
+            self.cpp_info.components[f"gst{lib}"].defines = ["GST_STATIC_COMPILATION"]
         self.libraries.append(f"gst{lib}")
 
     def _add_library_components(self, lib, requires = [], system_libs = []):
@@ -783,7 +793,8 @@ class PackageConan(ConanFile):
         self.cpp_info.components[f"gstreamer-{lib}-1.0"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
         self.cpp_info.components[f"gstreamer-{lib}-1.0"].requires = requires
         self.cpp_info.components[f"gstreamer-{lib}-1.0"].system_libs = system_libs
-        self.cpp_info.components[f"gstreamer-{lib}-1.0"].defines = ["GST_STATIC_COMPILATION"]
+        if not self.options.shared:
+            self.cpp_info.components[f"gstreamer-{lib}-1.0"].defines = ["GST_STATIC_COMPILATION"]
         return [f"gstreamer-{lib}-1.0"]
 
     def _add_plugin_components_loop(self, options_list, conan_option_prefix, plugin_list):
@@ -817,7 +828,8 @@ class PackageConan(ConanFile):
         self.cpp_info.components["gstreamer-1.0"].libdirs = [os.path.join(self.package_folder, "lib")]
         self.cpp_info.components["gstreamer-1.0"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
         self.cpp_info.components["gstreamer-1.0"].requires = ["glib::glib-2.0", "glib::gobject-2.0", "glib::gmodule-2.0"]
-        self.cpp_info.components["gstreamer-1.0"].defines = ["GST_STATIC_COMPILATION"]
+        if not self.options.shared:
+            self.cpp_info.components["gstreamer-1.0"].defines = ["GST_STATIC_COMPILATION"]
         if self.settings.os in ["Linux", "FreeBSD"]:
             self.cpp_info.components["gstreamer-1.0"].system_libs.extend(["m", "pthread"])
         elif self.settings.os == "Windows":
@@ -1303,13 +1315,17 @@ class PackageConan(ConanFile):
             self.cpp_info.components["gstcoretracers"].system_libs = thread_dep
             self.libraries.append("gstcoretracers")
 
-        self.cpp_info.components["gstreamer-full-1.0"].libs = ["gstreamer-full-1.0"]
-        self.cpp_info.components["gstreamer-full-1.0"].libdirs = [os.path.join(self.package_folder, "lib")]
-        self.cpp_info.components["gstreamer-full-1.0"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
-        self.cpp_info.components["gstreamer-full-1.0"].requires = ["glib::glib-2.0", "glib::gobject-2.0", "glib::gmodule-2.0"]
-        self.cpp_info.components["gstreamer-full-1.0"].defines = ["GST_STATIC_COMPILATION"]
-        if self.settings.os in ["Linux", "FreeBSD"]:
-            self.cpp_info.components["gstreamer-full-1.0"].system_libs.append("m")
-            self.cpp_info.components["gstreamer-full-1.0"].system_libs.append("pthread")
+        if not self.options.shared:
+            self.cpp_info.components["gstreamer-full-1.0"].libs = ["gstreamer-full-1.0"]
+            self.cpp_info.components["gstreamer-full-1.0"].libdirs = [os.path.join(self.package_folder, "lib")]
+            self.cpp_info.components["gstreamer-full-1.0"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
+            self.cpp_info.components["gstreamer-full-1.0"].requires = ["glib::glib-2.0", "glib::gobject-2.0", "glib::gmodule-2.0"]
+            self.cpp_info.components["gstreamer-full-1.0"].defines = ["GST_STATIC_COMPILATION"]
+            if self.settings.os in ["Linux", "FreeBSD"]:
+                self.cpp_info.components["gstreamer-full-1.0"].system_libs.append("m")
+                self.cpp_info.components["gstreamer-full-1.0"].system_libs.append("pthread")
 
-        self.cpp_info.components["gstreamer-full-1.0"].requires.extend(self.libraries)
+            self.cpp_info.components["gstreamer-full-1.0"].requires.extend(self.libraries)
+
+        if self.options.shared:
+            self.runenv_info.define_path("GST_PLUGIN_PATH", os.path.join(self.package_folder, "lib", "gstreamer-1.0"))
