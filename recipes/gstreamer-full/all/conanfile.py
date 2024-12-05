@@ -341,6 +341,7 @@ class PackageConan(ConanFile):
         "with_coretracers": [True, False],
 
         "with_tools": [True, False],
+        "with_qt6": [True, False],
 
         "gst_base_audioresample_format": ["auto", "int", "float"],
         "gst_base_gl_jpeg": ["disabled", "libjpeg", "libjpeg-turbo"],
@@ -375,6 +376,7 @@ class PackageConan(ConanFile):
         "with_coretracers": True,
 
         "with_tools": True, # Fails on windows due to LNK1170: line in command file contains maximum-length or more characters
+        "with_qt6": True,
 
         "gst_base_audioresample_format": "auto",
         "gst_base_gl_jpeg": "libjpeg",
@@ -464,6 +466,9 @@ class PackageConan(ConanFile):
 
         if self.options.with_libav:
             self.requires("ffmpeg/6.1", transitive_headers=True, transitive_libs=True)
+
+        if self.options.with_qt6:
+            self.requires("qt/6.7.3")
 
         if self.options.get_safe("gst_base_alsa"):
             self.requires("libalsa/1.2.10")
@@ -683,6 +688,7 @@ class PackageConan(ConanFile):
         tc.project_options["orc"] = "enabled" if self.options.get_safe('with_orc') else "disabled"
 
         tc.project_options["tools"] = "enabled" if self.options.with_tools else "disabled"
+        tc.project_options["qt6"] = "enabled" if self.options.with_qt6 else "disabled"
 
         if self.settings.compiler == "msvc":
             tc.project_options["c_args"] = "-%s" % self.settings.compiler.runtime
@@ -1086,6 +1092,10 @@ class PackageConan(ConanFile):
 
             base_options = GST_GOOD_MESON_OPTIONS.union(GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS)
             self._add_plugin_components_loop(base_options, 'gst_good', good_plugins)
+
+            # good plugins with external dependencies
+            if self.options.get_safe('with_qt6'):
+                self._add_plugin_components("qml6", ["qt::qt"])
 
         if self.options.with_bad:
             gsturidownloader_dep = self._add_library_components("uridownloader", gstbase_dep)
