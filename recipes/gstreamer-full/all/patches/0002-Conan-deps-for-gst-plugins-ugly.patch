@@ -1,0 +1,44 @@
+From 48686c9d3405999122e965156276cd7dcee9e1e9 Mon Sep 17 00:00:00 2001
+From: Matthias Fuchs <matz.fuchs@gmx.at>
+Date: Thu, 2 May 2024 19:38:39 -0400
+Subject: [PATCH 2/3] Conan deps for gst-plugins-ugly
+
+---
+ subprojects/gst-plugins-ugly/ext/x264/gstx264enc.h | 7 -------
+ subprojects/gst-plugins-ugly/ext/x264/meson.build  | 2 +-
+ 2 files changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/subprojects/gst-plugins-ugly/ext/x264/gstx264enc.h b/subprojects/gst-plugins-ugly/ext/x264/gstx264enc.h
+index 6cbfc5c3d0..ba7845b201 100644
+--- a/subprojects/gst-plugins-ugly/ext/x264/gstx264enc.h
++++ b/subprojects/gst-plugins-ugly/ext/x264/gstx264enc.h
+@@ -31,13 +31,6 @@
+ #include <stdint.h>
+ #endif
+ 
+-/* The x264.h header says this isn't needed with MinGW, but sometimes the
+- * compiler is unable to correctly do the pointer indirection for us, which
+- * leads to a segfault when you try to dereference any const values provided
+- * by x264.dll. See: https://bugzilla.gnome.org/show_bug.cgi?id=779249 */
+-#if defined(_WIN32) && !defined(X264_API_IMPORTS)
+-# define X264_API_IMPORTS
+-#endif
+ #include <x264.h>
+ 
+ G_BEGIN_DECLS
+diff --git a/subprojects/gst-plugins-ugly/ext/x264/meson.build b/subprojects/gst-plugins-ugly/ext/x264/meson.build
+index f5e2b585b6..cb1f30709f 100644
+--- a/subprojects/gst-plugins-ugly/ext/x264/meson.build
++++ b/subprojects/gst-plugins-ugly/ext/x264/meson.build
+@@ -8,7 +8,7 @@ x264_sources = [
+   'gstencoderbitrateprofilemanager.c',
+ ]
+ 
+-x264_dep = dependency('x264', version : '>=0.156', required : x264_opt,
++x264_dep = dependency('x264', required : x264_opt,
+                       fallback: ['x264', 'libx264_dep'])
+ 
+ if x264_dep.found()
+-- 
+2.32.0.windows.1
+
