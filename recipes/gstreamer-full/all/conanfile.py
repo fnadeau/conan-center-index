@@ -87,7 +87,7 @@ GST_GOOD_MESON_OPTIONS = {
     'isomp4',
     'law',
     'level',
-    'matroska',
+    #'matroska', TODO: Add bzip2 dependency bzip2/1.0.8
     'monoscope',
     'multifile',
     'multipart',
@@ -148,7 +148,7 @@ GST_BAD_MESON_OPTIONS = {
     'ivtc',
     'jp2kdecimator',
     'jpegformat',
-    'librfb',
+    #'librfb',
     'midi',
     'mpegdemux',
     'mpegpsmux',
@@ -174,6 +174,7 @@ GST_BAD_MESON_OPTIONS = {
     'subenc',
     'switchbin',
     'timecode',
+    'transcode',
     'unixfd',
     'videofilters',
     'videoframe_audiolevel',
@@ -326,7 +327,7 @@ class PackageConan(ConanFile):
         if self.options.with_libav:
             self.requires("ffmpeg/6.1", transitive_headers=True, transitive_libs=True)
 
-        if self.options.get_safe("gst_base_alsa") and self.options.get_safe("with_alsa"):
+        if self.options.get_safe("gst_base_alsa"):
             self.requires("libalsa/1.2.10")
         if self.options.get_safe("gst_base_ogg"):
             self.requires("ogg/1.3.5")
@@ -392,7 +393,6 @@ class PackageConan(ConanFile):
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
-
 
     def _get_gl_api(self):
         gl_api = set()
@@ -504,6 +504,7 @@ class PackageConan(ConanFile):
         tc = MesonToolchain(self)
         tc.project_options["auto_features"] = "disabled"
         tc.project_options["default_library"] = "static" # gstreamer-full is only in static
+        tc.project_options["gst-full"] = "enabled"
         tc.project_options["gst-full-target-type"] = "static_library"
 
         # GStreamer subprojects
@@ -627,10 +628,17 @@ class PackageConan(ConanFile):
         self.cpp_info.components[f"gstreamer-{lib}-1.0"].requires = requires
         self.cpp_info.components[f"gstreamer-{lib}-1.0"].system_libs = system_libs
         self.cpp_info.components[f"gstreamer-{lib}-1.0"].defines = ["GST_STATIC_COMPILATION"]
+        return [f"gstreamer-{lib}-1.0"]
+    
+    def _add_plugin_components_loop(self, options_list, conan_option_prefix, plugin_list):
+        for lib in options_list:
+            if self.options.get_safe(f'{conan_option_prefix}_{lib}'):
+                for plugin in plugin_list[lib]:
+                    self._add_plugin_components(plugin[0], plugin[1], plugin[2])
 
     def package_info(self):
-        self.cpp_info.set_property("cmake_file_name", "gstreamer-full-1.0")
-        self.cpp_info.set_property("cmake_target_name", "gstreamer-full-1.0::gstreamer-full-1.0")
+        #self.cpp_info.set_property("cmake_file_name", "gstreamer-full-1.0")
+        #self.cpp_info.set_property("cmake_target_name", "gstreamer-full-1.0::gstreamer-full-1.0")
 
         if self.options.get_safe('with_orc'):
             orc_dep = ["orc"]
@@ -655,36 +663,36 @@ class PackageConan(ConanFile):
         elif self.settings.os == "Android":
             self.cpp_info.components["gstreamer-1.0"].system_libs.append("log")
 
-        gst_dep = ["gstreamer-1.0"]
         libm = ["m"] if self.settings.os in ["Linux", "FreeBSD"] else []
         winsock2 = ["ws2_32"] if self.settings.os == "Windows" else []
         cocoa = ["Cocoa"] if self.settings.os == "Macos" else []
         log = ["log"] if self.settings.os == "Android" else []
         zlib_dep = ["zlib::zlib"]
         gio_dep = ["glib::gio-2.0"]
+        gio_unix_dep = ["glib::gio-unix-2.0"]
         gmodule_dep = ["glib::gmodule-2.0"]
         libdrm_dep = ["libdrm::libdrm"] if self.settings.os in ["Linux"] else []
+        thread_dep = ["pthread"] if self.settings.os in ["Linux", "FreeBSD"] else []
+        network_deps = [] # TODO: Probably required for Solaris
+        wl_client_dep = ["wayland-client"] if self.settings.os == "Linux" else []
 
-        self._add_library_components("base", gst_dep)
-        self._add_library_components("controller", gst_dep, libm)
-        self._add_library_components("net", gst_dep, libm)
-
-        gst_base_dep = ["gstreamer-base-1.0"]
-        gst_controller_dep = ["gstreamer-controller-1.0"]
-        gst_net_dep = ["gstreamer-net-1.0"]
+        gst_dep = ["gstreamer-1.0"]
+        gstbase_dep = self._add_library_components("base", gst_dep)
+        gstcontroller_dep = self._add_library_components("controller", gst_dep, libm)
+        gstnet_dep = self._add_library_components("net", gst_dep, libm)
 
         if self.options.with_base:
-            self._add_library_components("allocators", libdrm_dep + gst_dep); allocators_dep = ["gstreamer-allocators-1.0"]
-            self._add_library_components("app", gst_base_dep); app_dep = ["gstreamer-app-1.0"]
-            self._add_library_components("tag", gst_base_dep + zlib_dep, libm); tag_dep = ["gstreamer-tag-1.0"]
-            self._add_library_components("audio", tag_dep + gst_base_dep + orc_dep, libm); audio_dep = ["gstreamer-audio-1.0"]
-            self._add_library_components("video", gst_base_dep + orc_dep, libm); video_dep = ["gstreamer-video-1.0"]
-            self._add_library_components("fft", gst_dep, libm); fft_dep = ["gstreamer-fft-1.0"]
-            self._add_library_components("riff", audio_dep + tag_dep); riff_dep = ["gstreamer-riff-1.0"]
-            self._add_library_components("rtp", audio_dep + gst_base_dep); rtp_dep = ["gstreamer-rtp-1.0"]
-            self._add_library_components("pbutils", video_dep + audio_dep + tag_dep); pbutils_dep = ["gstreamer-pbutils-1.0"]
-            self._add_library_components("sdp", rtp_dep + gst_dep + gio_dep + pbutils_dep); sdp_dep = ["gstreamer-sdp-1.0"]
-            self._add_library_components("rtsp", gst_base_dep + gst_dep + gio_dep + sdp_dep, libm + winsock2); rtsp_dep = ["gstreamer-rtsp-1.0"]
+            gstallocators_dep = self._add_library_components("allocators", libdrm_dep + gst_dep)
+            gstapp_dep = self._add_library_components("app", gstbase_dep)
+            gsttag_dep = self._add_library_components("tag", gstbase_dep + zlib_dep, libm)
+            gstaudio_dep = self._add_library_components("audio", gsttag_dep + gstbase_dep + gst_dep + orc_dep, libm)
+            gstvideo_dep = self._add_library_components("video", gstbase_dep + orc_dep, libm)
+            gstfft_dep = self._add_library_components("fft", gst_dep, libm)
+            gstriff_dep = self._add_library_components("riff", gstaudio_dep + gsttag_dep)
+            gstrtp_dep = self._add_library_components("rtp", gstaudio_dep + gstbase_dep)
+            gstpbutils_dep = self._add_library_components("pbutils", gstvideo_dep + gstaudio_dep + gsttag_dep)
+            gstsdp_dep = self._add_library_components("sdp", gstrtp_dep + gst_dep + gio_dep + gstpbutils_dep)
+            gstrtsp_dep = self._add_library_components("rtsp", gstbase_dep + gst_dep + gio_dep + gstsdp_dep, libm + winsock2)
 
             for lib in GST_BASE_MESON_OPTIONS:
                 # drm doesn't genereate a lib, it adds a dummy drm driver in gstreamer-allocators
@@ -693,59 +701,59 @@ class PackageConan(ConanFile):
                 if lib in ["drm", "gio-typefinder", "xi", "xshm"]: continue
                 if self.options.get_safe(f'gst_base_{lib}'):
                     # typefind lib's name is typefindfunctions
-                    if lib is "typefind": lib = "typefindfunctions"
-                    if lib is "debugutils": lib = "basedebug"
+                    if lib == "typefind": lib = "typefindfunctions"
+                    if lib == "debugutils": lib = "basedebug"
                     self._add_plugin_components(lib)
 
-            self.cpp_info.components['adder'].requires = audio_dep + orc_dep
-            self.cpp_info.components['app'].requires = gst_base_dep + app_dep + tag_dep
-            self.cpp_info.components['audioconvert'].requires = audio_dep + gst_base_dep
-            self.cpp_info.components['audiomixer'].requires = audio_dep + gst_base_dep + orc_dep
-            self.cpp_info.components['audiorate'].requires = audio_dep + gst_base_dep
-            self.cpp_info.components['audioresample'].requires = audio_dep + gst_base_dep
-            self.cpp_info.components['audioresample'].system_libs = libm
-            self.cpp_info.components['audiotestsrc'].requires = audio_dep + gst_base_dep
-            self.cpp_info.components['audiotestsrc'].system_libs = libm
-            self.cpp_info.components['compositor'].requires = video_dep + gst_base_dep + orc_dep
-            self.cpp_info.components['compositor'].system_libs = libm
-            self.cpp_info.components['basedebug'].requires = gst_dep + gst_base_dep + video_dep
-            self.cpp_info.components['dsd'].requires = audio_dep + gst_base_dep
-            self.cpp_info.components['encoding'].requires = pbutils_dep + video_dep + gst_base_dep
-            self.cpp_info.components['gio'].requires = gst_base_dep + gio_dep
-            self.cpp_info.components['overlaycomposition'].requires = video_dep
-            self.cpp_info.components['pbtypes'].requires = video_dep
-            self.cpp_info.components['playback'].requires = audio_dep + video_dep + pbutils_dep + tag_dep
-            self.cpp_info.components['rawparse'].requires = gst_base_dep + video_dep + audio_dep
-            self.cpp_info.components['subparse'].requires = gst_base_dep
-            self.cpp_info.components['tcp'].requires = gst_base_dep + gst_net_dep + gio_dep
-            self.cpp_info.components['typefindfunctions'].requires = pbutils_dep + gst_base_dep
-            self.cpp_info.components['videoconvertscale'].requires = video_dep + gst_dep + gst_base_dep
-            self.cpp_info.components['videorate'].requires = video_dep
-            self.cpp_info.components['videotestsrc'].requires = video_dep + gst_dep + gst_base_dep + orc_dep
-            self.cpp_info.components['videotestsrc'].system_libs = libm
-            self.cpp_info.components['volume'].requires = audio_dep + gst_dep + gst_base_dep + orc_dep
+            self.cpp_info.components['gstadder'].requires = gstaudio_dep + orc_dep
+            self.cpp_info.components['gstapp'].requires = gstbase_dep + gstapp_dep + gsttag_dep
+            self.cpp_info.components['gstaudioconvert'].requires = gstaudio_dep + gstbase_dep
+            self.cpp_info.components['gstaudiomixer'].requires = gstaudio_dep + gstbase_dep + orc_dep
+            self.cpp_info.components['gstaudiorate'].requires = gstaudio_dep + gstbase_dep
+            self.cpp_info.components['gstaudioresample'].requires = gstaudio_dep + gstbase_dep
+            self.cpp_info.components['gstaudioresample'].system_libs = libm
+            self.cpp_info.components['gstaudiotestsrc'].requires = gstaudio_dep + gstbase_dep
+            self.cpp_info.components['gstaudiotestsrc'].system_libs = libm
+            self.cpp_info.components['gstcompositor'].requires = gstvideo_dep + gstbase_dep + orc_dep
+            self.cpp_info.components['gstcompositor'].system_libs = libm
+            self.cpp_info.components['gstbasedebug'].requires = gst_dep + gstbase_dep + gstvideo_dep
+            self.cpp_info.components['gstdsd'].requires = gstaudio_dep + gstbase_dep
+            self.cpp_info.components['gstencoding'].requires = gstpbutils_dep + gstvideo_dep + gstbase_dep
+            self.cpp_info.components['gstgio'].requires = gstbase_dep + gio_dep
+            self.cpp_info.components['gstoverlaycomposition'].requires = gstvideo_dep
+            self.cpp_info.components['gstpbtypes'].requires = gstvideo_dep
+            self.cpp_info.components['gstplayback'].requires = gstaudio_dep + gstvideo_dep + gstpbutils_dep + gsttag_dep
+            self.cpp_info.components['gstrawparse'].requires = gstbase_dep + gstvideo_dep + gstaudio_dep
+            self.cpp_info.components['gstsubparse'].requires = gstbase_dep
+            self.cpp_info.components['gsttcp'].requires = gstbase_dep + gstnet_dep + gio_dep
+            self.cpp_info.components['gsttypefindfunctions'].requires = gstpbutils_dep + gstbase_dep
+            self.cpp_info.components['gstvideoconvertscale'].requires = gstvideo_dep + gst_dep + gstbase_dep
+            self.cpp_info.components['gstvideorate'].requires = gstvideo_dep
+            self.cpp_info.components['gstvideotestsrc'].requires = gstvideo_dep + gst_dep + gstbase_dep + orc_dep
+            self.cpp_info.components['gstvideotestsrc'].system_libs = libm
+            self.cpp_info.components['gstvolume'].requires = gstaudio_dep + gst_dep + gstbase_dep + orc_dep
 
             if self.options.get_safe('gst_base_typefind') and self.options.get_safe('gst_base_gio-typefinder'):
                 self.cpp_info.components["gsttypefindfunctions"].requires.append("glib::gio-2.0")
 
             # Base pulgins with external dependencies
             if self.options.get_safe('gst_base_alsa'):
-                self._add_plugin_components("alsa", ["libalsa::libalsa"] + audio_dep + tag_dep + gst_dep + gst_base_dep)
+                self._add_plugin_components("alsa", ["libalsa::libalsa"] + gstaudio_dep + gsttag_dep + gst_dep + gstbase_dep)
 
             if self.options.get_safe('gst_base_ogg'):
-                self._add_plugin_components("ogg", ["ogg::ogg"] + audio_dep + pbutils_dep + tag_dep + riff_dep + gst_dep + gst_base_dep)
+                self._add_plugin_components("ogg", ["ogg::ogg"] + gstaudio_dep + gstpbutils_dep + gsttag_dep + gstriff_dep + gst_dep + gstbase_dep)
 
             if self.options.get_safe('gst_base_opus'):
-                self._add_plugin_components("opus", ["opus::opus"] + pbutils_dep + tag_dep + audio_dep + gst_dep + gst_base_dep, libm)
+                self._add_plugin_components("opus", ["opus::opus"] + gstpbutils_dep + gsttag_dep + gstaudio_dep + gst_dep + gstbase_dep, libm)
 
             if self.options.get_safe('gst_base_pango'):
-                self._add_plugin_components("pango", ["pango::pangocairo"] + video_dep + gst_dep + gst_base_dep, libm)
+                self._add_plugin_components("pango", ["pango::pangocairo"] + gstvideo_dep + gst_dep + gstbase_dep, libm)
 
             if self.options.get_safe('gst_base_theora'):
-                self._add_plugin_components("theora", ["theora::theora"] + video_dep + tag_dep + gst_dep + gst_base_dep)
+                self._add_plugin_components("theora", ["theora::theora"] + gstvideo_dep + gsttag_dep + gst_dep + gstbase_dep)
 
             if self.options.get_safe('gst_base_vorbis'):
-                self._add_plugin_components("vorbis", ["vorbis::vorbis"] + audio_dep + tag_dep + gst_dep + gst_base_dep)
+                self._add_plugin_components("vorbis", ["vorbis::vorbis"] + gstaudio_dep + gsttag_dep + gst_dep + gstbase_dep)
                 # TODO: Add gstivorbisdec once tremor is supported
 
             if self.options.get_safe('gst_base_x11'):
@@ -754,15 +762,15 @@ class PackageConan(ConanFile):
                     extra_libs.append("xorg::xext")
                 if self.options.get_safe('gst_base_xi'):
                     extra_libs.append("xorg::xi")
-                self._add_plugin_components("ximagesink", video_dep + gst_base_dep + gst_dep + extra_libs + ["xorg::x11"])
+                self._add_plugin_components("ximagesink", gstvideo_dep + gstbase_dep + gst_dep + extra_libs + ["xorg::x11"])
                 if self.options.get_safe('gst_base_xvideo'):
-                    self._add_plugin_components("xvimagesink", video_dep + gst_base_dep + gst_dep + extra_libs + ["xorg::xv"], libm)
+                    self._add_plugin_components("xvimagesink", gstvideo_dep + gstbase_dep + gst_dep + extra_libs + ["xorg::xv"], libm)
 
             gl_lib_deps = ["opengl::opengl"]
             gl_misc_deps = []
 
             if getattr(self.options, 'gst_base_gl'):
-                self._add_library_components("gl", gst_base_dep + video_dep + allocators_dep + gmodule_dep + gl_lib_deps + self._get_gl_platform_deps() + self._get_gl_winsys_deps() + gl_misc_deps); gstgl_dep = ["gstreamer-gl-1.0"]
+                self._add_library_components("gl", gstbase_dep + gstvideo_dep + gstallocators_dep + gmodule_dep + gl_lib_deps + self._get_gl_platform_deps() + self._get_gl_winsys_deps() + gl_misc_deps); gstgl_dep = ["gstreamer-gl-1.0"]
                 #self._add_library_components("gl-prototypes", gstgl_dep + gl_lib_deps)
 
 #                if self.options.get_safe("with_xorg"):
@@ -774,100 +782,209 @@ class PackageConan(ConanFile):
 #                if self.options.get_safe("with_egl"):
 #                    self._add_library_components("gl-egl", gstgl_dep)
 
-                self._add_plugin_components("opengl", gstgl_dep + video_dep + gl_lib_deps + self._get_gl_plugin_deps(), libm)
+                self._add_plugin_components("opengl", gstgl_dep + gstvideo_dep + gstbase_dep + gstcontroller_dep + gl_lib_deps + self._get_gl_plugin_deps(), libm)
 
         if self.options.with_good:
-            for lib in GST_GOOD_MESON_OPTIONS:
-                if self.options.get_safe(f'gst_good_{lib}'):
-                    if lib is "alpha":
-                        self._add_plugin_components("alpha", video_dep + gst_dep, libm)
-                        self._add_plugin_components("alphacolor", video_dep + gst_dep)
-                    if lib is "debugutils":
-                        self._add_plugin_components("navigationtest")
-                        self._add_plugin_components("debug")
-                    elif lib is "law":
-                        self._add_plugin_components("alaw")
-                        self._add_plugin_components("mulaw")
-                    elif lib is "flx": self._add_plugin_components("flxdec")
-                    elif lib is "y4m": self._add_plugin_components("y4menc")
-                    else:
-                        self._add_plugin_components(lib)
+            good_plugins = {
+                "alpha": [
+                    ["alpha", gstvideo_dep + gst_dep, libm],
+                    ["alphacolor", gstvideo_dep + gst_dep, []]
+                ],
+                "apetag": [["apetag", gstpbutils_dep + gsttag_dep + gst_dep, []]], 
+                "audiofx": [["audiofx", orc_dep + gstaudio_dep + gstfft_dep, libm]],
+                "audioparsers": [["audioparsers", gst_dep + gstbase_dep + gstpbutils_dep + gstaudio_dep + gsttag_dep, []]],
+                "auparse": [["auparse", gstaudio_dep + gstbase_dep, []]],
+                "autodetect": [["autodetect", gst_dep, []]],
+                "avi": [["avi", gst_dep + gstriff_dep + gstaudio_dep + gstvideo_dep + gsttag_dep, []]], 
+                "cutter": [["cutter", gstbase_dep + gstaudio_dep, libm]],
+                "debugutils": [
+                    ["navigationtest", gstbase_dep + gstvideo_dep, libm],
+                    ["debug", gst_dep + gstbase_dep + gstvideo_dep, []]
+                ],
+                "deinterlace": [["deinterlace", orc_dep + gstbase_dep + gstvideo_dep, []]],
+                "dtmf": [["dtmf", gstbase_dep + gstrtp_dep, libm]],
+                "effectv": [["effectv", gst_dep + gstbase_dep + gstvideo_dep, libm]],
+                "equalizer": [["equalizer", gstbase_dep + gstaudio_dep, libm]],
+                "flv": [["flv", gstpbutils_dep + gstvideo_dep + gsttag_dep + gstaudio_dep, []]],
+                "flx": [["flxdec", gstbase_dep + gstvideo_dep + gst_dep, []]],
+                "goom": [["goom", gst_dep + gstpbutils_dep + gstbase_dep + orc_dep, libm]],
+                "goom2k1": [["goom2k1", gstpbutils_dep + gstbase_dep, libm]],
+                "icydemux": [["icydemux", gst_dep + gstbase_dep + gsttag_dep + zlib_dep, []]],
+                "id3demux": [["id3demux", gst_dep + gstbase_dep + gsttag_dep + gstpbutils_dep, []]],
+                "imagefreeze": [["imagefreeze", gst_dep, []]],
+                "interleave": [["interleave", gstbase_dep + gstaudio_dep, []]],
+                "isomp4": [["isomp4", gst_dep + gstriff_dep + gstaudio_dep + gstvideo_dep + gstrtp_dep + gsttag_dep + gstpbutils_dep + zlib_dep, []]],
+                "law": [
+                    ["alaw", gstbase_dep + gstaudio_dep, []],
+                    ["mulaw", gstbase_dep + gstaudio_dep, []]
+                ],
+                "level": [["level", gstbase_dep + gstaudio_dep, libm]],
+                #"matroska": [["matroska", gstpbutils_dep + gstaudio_dep + gstriff_dep + gstvideo_dep + gsttag_dep + gstbase_dep + gst_dep + zlib_dep + bz2_dep, libm]],
+                "monoscope": [["monoscope", gstbase_dep + gstaudio_dep + gstvideo_dep, []]],
+                "multifile": [["multifile", gstvideo_dep + gstbase_dep + gstpbutils_dep + gio_dep, []]],
+                "multipart": [["multipart", gstbase_dep, []]],
+                "replaygain": [["replaygain", gst_dep + gstbase_dep + gstpbutils_dep + gstaudio_dep, libm]],
+                "rtp": [["rtp", gstbase_dep + gstaudio_dep + gstvideo_dep + gsttag_dep + gstrtp_dep + gstpbutils_dep, libm]],
+                "rtpmanager": [["rtpmanager", gstbase_dep + gstnet_dep + gstrtp_dep + gstaudio_dep + gio_dep, []]],
+                "rtsp": [["rtsp", gstbase_dep + gstrtp_dep + gstrtsp_dep + gstsdp_dep + gstnet_dep + gio_dep, []]],
+                "shapewipe": [["shapewipe", gst_dep + gstvideo_dep + gio_dep, []]],
+                "smpte": [["smpte", gstvideo_dep + gst_dep, libm]],
+                "spectrum": [["spectrum", gstbase_dep + gstfft_dep + gstaudio_dep, libm]],
+                "udp": [["udp", gst_dep + gstbase_dep + gstnet_dep + gio_dep, []]],
+                "videobox": [["videobox", orc_dep + gstbase_dep + gstvideo_dep, []]],
+                "videocrop": [["videocrop", gst_dep + gstbase_dep + gstvideo_dep, []]],
+                "videofilter": [["videofilter", gstbase_dep + gstvideo_dep, libm]],
+                "videomixer": [["videomixer", orc_dep + gstvideo_dep + gstbase_dep, libm]],
+                "wavenc": [["wavenc", gstbase_dep + gstaudio_dep + gstriff_dep, []]],
+                "wavparse": [["wavparse", gstbase_dep + gstpbutils_dep + gstriff_dep + gstaudio_dep + gsttag_dep, libm]],
+                "xingmux": [["xingmux", gstbase_dep, []]],
+                "y4m": [["y4menc", gstbase_dep + gstvideo_dep, []]],
+            }
+
+            self._add_plugin_components_loop(GST_GOOD_MESON_OPTIONS, 'gst_good', good_plugins)
 
         if self.options.with_bad:
-            for lib in GST_BAD_MESON_OPTIONS:
-                if self.options.get_safe(f'gst_bad_{lib}'):
-                    if lib is "camerabin2": lib = "camerabin"
-                    elif lib is "debugutils": lib =  "debugutilsbad"
-                    elif lib is "librfb": lib = "rfbsrc"
-                    elif lib is "mpegdemux": lib = "mpegpsdemux"
-                    elif lib is "onvif": lib = "rtponvif"
-                    elif lib is "rawparse": lib = "legacyrawparse"
-                    elif lib is "rtp": lib = "rtpmanagerbad"
-                    elif lib is "videofilters": lib = "videofiltersbad"
-                    elif lib is "videoparsers":lib = "videoparsersbad"
-                    elif lib is "sdp": lib = "sdpelem"
-                    elif lib is "y4m": lib = "y4mdec"
-                    self.cpp_info.components[f"gst{lib}"].libs = [f"gst{lib}"]
-                    self.cpp_info.components[f"gst{lib}"].libdirs = [os.path.join(self.package_folder, "lib", "gstreamer-1.0")]
-                    self.libraries.append(f"gst{lib}")
+            gsturidownloader_dep = self._add_library_components("uridownloader", gstbase_dep)
+            gstadaptivedemux_dep = self._add_library_components("adaptivedemux", gstbase_dep + gsturidownloader_dep)
+            gstanalytics_dep = self._add_library_components("analytics", gstbase_dep + gstvideo_dep)
+            gstbadaudio_dep = self._add_library_components("badaudio", gstbase_dep + gstaudio_dep)
+            gstbasecamerabin_dep = self._add_library_components("basecamerabinsrc", gstapp_dep)
+            gstcodecparsers_dep = self._add_library_components("codecparsers", gstbase_dep)
+            gstcodecs_dep = self._add_library_components("codecs", gstvideo_dep + gstcodecparsers_dep)
+            #gstcuda_dep = self._add_library_components("cuda", gstbase_dep + gmodule_dep + gstvideo_dep + gstglproto_dep + gstcuda_platform_dep)
+            #gstd3d11_dep = self._add_library_components("d3d11", gstbase_dep + gstvideo_dep + d3d11_lib + dxgi_lib)
+            if self.settings.os == "Windows":
+                gstdxva_dep = self._add_library_components("dxva", gstvideo_dep + gstcodecs_dep)
+            gstinsertbin_dep = self._add_library_components("insertbin", gst_dep)
+            gstphotography_dep = self._add_library_components("photography", gst_dep)
+            gstisoff_dep = self._add_library_components("isoff", gstbase_dep)
+            gstmpegts_dep = self._add_library_components("mpegts", gst_dep)
+            gstmse_dep = self._add_library_components("mse", gstbase_dep + gstapp_dep)
+            #gstopencv_dep = self._add_library_components("opencv", gstbase_dep + gstvideo_dep + opencv_dep) TODO handle opencv dependency
+            gstplay_dep = self._add_library_components("play", gstbase_dep + gstvideo_dep + gstaudio_dep + gsttag_dep + gstpbutils_dep)
+            gstplayer_dep = self._add_library_components("player", gstbase_dep + gstvideo_dep + gstaudio_dep + gstplay_dep + gsttag_dep + gstpbutils_dep)
+            gstsctp_dep = self._add_library_components("sctp", gstbase_dep)
+            gst_transcoder_dep = self._add_library_components("transcoder", gst_dep + gstpbutils_dep)
+            #gstva_dep = self._add_library_components("va", gst_dep + gstvideo_dep + gstallocators_dep + libva_dep + platform_deps)
+            #TODO vulkan, multiple lib
+            #gstwayland_dep = self._add_library_components("wayland", gst_dep + gstallocators_dep + gstvideo_dep + libdrm_dep, wl_client_dep)
+            gstwebrtc_dep = self._add_library_components("webrtc", gstbase_dep + gstsdp_dep)
+            #gstwinrt_dep = self._add_library_components("winrt", gstbase_dep + runtimeobject_lib)
 
-                    if lib is "camerabin":
-                            self._add_library_components("basecamerabinsrc")
-                            self._add_library_components("photography")
-                            self.cpp_info.components[f"gst{lib}"].requires = ["gstbasecamerabinsrc-1.0"]
-                            self.cpp_info.components[f"gst{lib}"].requires = ["gstphotography-1.0"]
-                    if lib is "insertbin":
-                        self._add_library_components("insertbin")
-                        self.cpp_info.components[f"gst{lib}"].requires = ["gstinsertbin-1.0"]
-                    if lib in ["jpegformat", "videoparsersbad"]:
-                            self._add_library_components("codecparsers")
-                            self.cpp_info.components[f"gst{lib}"].requires = ["gstcodecparsers-1.0"]
-                    if lib in ["mpegtsdemux", "mpegtsmux"]:
-                        self._add_library_components("mpegts")
-                        self.cpp_info.components[f"gst{lib}"].requires = ["gstmpegts-1.0"]
-                    if lib is "mse":
-                            self._add_library_components("mse")
-                            self.cpp_info.components[f"gst{lib}"].requires = ["gstmse-1.0"]
+            bad_plugins = {
+                'accurip': [["accurip", gstbase_dep + gstaudio_dep, []]],
+                'adpcmdec': [["adpcmdec", gstbase_dep + gstaudio_dep, []]],
+                'adpcmenc': [["adpcmenc", gstbase_dep + gstaudio_dep, []]],
+                'aiff': [["aiff", gstbase_dep + gsttag_dep + gstaudio_dep + gstpbutils_dep, libm]],
+                #'analyticsoverlay': [["analyticsoverlay", , []]],
+                'asfmux': [["asfmux", gstbase_dep + gstrtp_dep, []]],
+                'audiobuffersplit': [["audiobuffersplit", gstbase_dep + gstaudio_dep, []]],
+                'audiofxbad': [["audiofxbad", gstbase_dep + gstaudio_dep, libm]],
+                'audiolatency': [["audiolatency", gstbase_dep, []]],
+                'audiomixmatrix': [["audiomixmatrix", gstbase_dep + gstaudio_dep, libm]],
+                'audiovisualizers': [["audiovisualizers", gstbase_dep + gstpbutils_dep + gstaudio_dep + gstvideo_dep + gstfft_dep, libm]],
+                'autoconvert': [["autoconvert", gstbase_dep + gstpbutils_dep + gstvideo_dep, []]],
+                'bayer': [["bayer", gstbase_dep + gstvideo_dep + orc_dep, []]],
+                'camerabin2': [["camerabin", gstbasecamerabin_dep + gstphotography_dep + gsttag_dep + gstapp_dep + gstpbutils_dep + gstbase_dep, []]],
+                'codecalpha': [["codecalpha", gstvideo_dep + gstpbutils_dep, []]],
+                'codectimestamper': [["codectimestamper", gstcodecparsers_dep + gstbase_dep + gstvideo_dep, []]],
+                'coloreffects': [["coloreffects", gstbase_dep + gstvideo_dep, []]],
+                'debugutils': [["debugutilsbad", gstbase_dep + gstvideo_dep + gstnet_dep + gstaudio_dep + gio_dep, []]],
+                'dvbsubenc': [["dvbsubenc", gstbase_dep + gstvideo_dep, libm]],
+                'dvbsuboverlay': [["dvbsuboverlay", gstbase_dep + gstvideo_dep, []]],
+                'dvdspu': [["dvdspu", gstbase_dep + gstvideo_dep, []]],
+                'faceoverlay': [["faceoverlay", gstbase_dep + gstvideo_dep, []]],
+                'festival': [["festival", gstbase_dep + gstaudio_dep + winsock2 + network_deps, []]],
+                'fieldanalysis': [["fieldanalysis", gstbase_dep + gstvideo_dep + orc_dep, []]],
+                'freeverb': [["freeverb", gstbase_dep + gstaudio_dep, []]],
+                'frei0r': [["frei0r", gstbase_dep + gstvideo_dep + gmodule_dep, []]],
+                'gaudieffects': [["gaudieffects", gstbase_dep + gstvideo_dep + orc_dep, libm]],
+                'gdp': [["gdp", gstbase_dep, []]],
+                'geometrictransform': [["geometrictransform", gstbase_dep + gstvideo_dep, libm]],
+                'id3tag': [["id3tag", gstbase_dep + gsttag_dep, []]],
+                'insertbin': [["insertbin", gst_dep + gstinsertbin_dep, []]],
+                'inter': [["inter", gstaudio_dep + gstvideo_dep + gstbase_dep, []]],
+                'interlace': [["interlace", gstbase_dep + gstvideo_dep, []]],
+                'ivfparse': [["ivfparse", gstbase_dep, []]],
+                'ivtc': [["ivtc", gstbase_dep + gstvideo_dep, []]],
+                'jp2kdecimator': [["jp2kdecimator", gstbase_dep, []]],
+                'jpegformat': [["jpegformat", gstbase_dep + gstcodecparsers_dep + gstvideo_dep + gsttag_dep, []]],
+                #'librfb': [["librfb", gstbase_dep + gstvideo_dep + gio_dep + x11_dep, []]],
+                'midi': [["midi", gstbase_dep + gsttag_dep, libm]],
+                'mpegdemux': [["mpegpsdemux", gstbase_dep + gsttag_dep + gstpbutils_dep, []]],
+                'mpegpsmux': [["mpegpsmux", gstbase_dep, []]],
+                'mpegtsdemux': [["mpegtsdemux", gstcodecparsers_dep + gstmpegts_dep + gsttag_dep + gstpbutils_dep + gstaudio_dep + gstbase_dep, libm]],
+                'mpegtsmux': [["mpegtsmux", gstmpegts_dep + gsttag_dep + gstpbutils_dep + gstaudio_dep + gstvideo_dep + gstbase_dep, []]],
+                'mse': [["mse", gstbase_dep + gstmse_dep, []]],
+                'mxf': [["mxf", gstbase_dep + gstaudio_dep + gstvideo_dep, []]],
+                'netsim': [["netsim", gstbase_dep, libm]],
+                'onvif': [["rtponvif", gstrtp_dep + gstbase_dep, []]],
+                'pcapparse': [["pcapparse", gstbase_dep, winsock2]],
+                'pnm': [["pnm", gstbase_dep + gstvideo_dep, []]],
+                'proxy': [["proxy", gstbase_dep, []]],
+                'rawparse': [["legacyrawparse", gstbase_dep + gstvideo_dep + gstaudio_dep, []]],
+                'removesilence': [["removesilence", gstbase_dep + gstaudio_dep, libm]],
+                'rist': [["rist", gstrtp_dep + gstnet_dep + gio_dep, []]],
+                'rtmp2': [["rtmp2", gstbase_dep + gio_dep, libm]],
+                'rtp': [["rtpmanagerbad", gst_dep + gstbase_dep + gstrtp_dep + gstnet_dep + gstcontroller_dep + gio_dep, []]],
+                'sdp': [["sdpelem", gstbase_dep + gstrtp_dep + gstsdp_dep + gio_dep + gstapp_dep, []]],
+                'segmentclip': [["segmentclip", gstbase_dep + gstaudio_dep + gstvideo_dep, []]],
+                'siren': [["siren", gstbase_dep + gstaudio_dep, libm]],
+                'smooth': [["smooth", gstbase_dep + gstvideo_dep, []]],
+                'speed': [["speed", gstbase_dep + gstaudio_dep, libm]],
+                'subenc': [["subenc", gstbase_dep, []]],
+                'switchbin': [["switchbin", gst_dep, []]],
+                'timecode': [["timecode", gstbase_dep + gstaudio_dep + gstvideo_dep, []]], # TODO handle LTC dependency
+                'transcode': [["transcode", gst_dep + gstpbutils_dep, []]],
+                'unixfd': [["unixfd", gstbase_dep + gstallocators_dep + gio_dep + gio_unix_dep, []]],
+                'videofilters': [["videofiltersbad", gstvideo_dep + gstbase_dep + orc_dep, libm]],
+                'videoframe_audiolevel': [["videoframe_audiolevel", gstvideo_dep + gstaudio_dep, libm]],
+                'videoparsers': [["videoparsersbad", gstcodecparsers_dep + gstbase_dep + gstpbutils_dep + gstvideo_dep, []]],
+                'videosignal': [["videosignal", gstbase_dep + gstvideo_dep, []]],
+                'vmnc': [["vmnc", gstbase_dep + gstvideo_dep, []]],
+                'y4m': [["y4mdec", gstbase_dep + gstvideo_dep, []]],
+            }
 
-                    if lib is "unixfd":
-                        self.cpp_info.components[f"gst{lib}"].requires = ["gstallocators-1.0"]
+            self._add_plugin_components_loop(GST_BAD_MESON_OPTIONS, 'gst_bad', bad_plugins)
 
         if self.options.with_ugly:
-            for lib in GST_UGLY_MESON_OPTIONS:
-                if self.options.get_safe(f'gst_ugly_{lib}'):
-                        if lib is "asfdemux": lib = "asf"
-                        self._add_plugin_components(lib)
+            ugly_plugins = {
+                'asfdemux': [["asf", gstbase_dep + gstrtp_dep + gstvideo_dep + gstaudio_dep + gsttag_dep + gstriff_dep + gstrtsp_dep + gstsdp_dep, []]],
+                'dvdlpcmdec': [["dvdlpcmdec", gstbase_dep + gstaudio_dep, []]],
+                'dvdsub': [["dvdsub", gstbase_dep + gstvideo_dep, []]],
+                'realmedia': [["realmedia", gstbase_dep + gstrtsp_dep + gstsdp_dep + gstpbutils_dep, []]],
+            }
+
+            self._add_plugin_components_loop(GST_UGLY_MESON_OPTIONS, 'gst_ugly', ugly_plugins)
 
         if self.options.with_libav:
             libav_deps = ["ffmpeg::avfilter", "ffmpeg::avformat", "ffmpeg::avcodec", "ffmpeg::avutil"]
-            libav_deps.extend(gst_dep + audio_dep + video_dep + gst_base_dep)
+            libav_deps.extend(gst_dep + gstaudio_dep + gstvideo_dep + gstbase_dep)
             self._add_plugin_components("libav", libav_deps)
 
         if self.options.with_rtsp_server:
-            self._add_library_components("rtspserver")
+            gst_rtsp_server_dep = self._add_library_components("rtspserver", gstrtsp_dep + gstrtp_dep + gstsdp_dep + gstnet_dep + gstapp_dep + gstvideo_dep)
 
-            for lib in GST_RTSP_SERVER_MESON_OPTIONS:
-                if self.options.get_safe(f'gst_rtsp_server_{lib}'):
-                        self._add_plugin_components(lib)
-                        if lib is "rtspclientsink":
-                            self.cpp_info.components["gstrtspclientsink"].requires = ["gstrtspserver-1.0"]
+            rtsp_server_plugins = {
+                'rtspclientsink': [["rtspclientsink", gstrtsp_dep + gstsdp_dep + gst_rtsp_server_dep, []]]
+            }
 
-        self.cpp_info.components["gstcoreelements"].set_property("cmake_target_name", "gstreamer-full-1.0::gstcoreelements")
+            self._add_plugin_components_loop(GST_RTSP_SERVER_MESON_OPTIONS, 'gst_rtsp_server', rtsp_server_plugins)
+
         self.cpp_info.components["gstcoreelements"].libs = ["gstcoreelements"]
         self.cpp_info.components["gstcoreelements"].libdirs = [os.path.join(self.package_folder, "lib", "gstreamer-1.0")]
         self.cpp_info.components["gstcoreelements"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
-        self.cpp_info.components["gstcoreelements"].requires = ["glib::gobject-2.0", "glib::glib-2.0", "gstreamer-1.0"]
+        self.cpp_info.components["gstcoreelements"].requires = gst_dep + gstbase_dep
         self.libraries.append("gstcoreelements")
 
         if self.options.with_coretracers:
-            self.cpp_info.components["gstcoretracers"].set_property("cmake_target_name", "gstreamer-full-1.0::gstcoretracers")
             self.cpp_info.components["gstcoretracers"].libs = ["gstcoretracers"]
             self.cpp_info.components["gstcoretracers"].libdirs = [os.path.join(self.package_folder, "lib", "gstreamer-1.0")]
             self.cpp_info.components["gstcoretracers"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
-            self.cpp_info.components["gstcoretracers"].requires = ["glib::gobject-2.0", "glib::glib-2.0", "gstreamer-1.0"]
+            self.cpp_info.components["gstcoretracers"].requires = gst_dep
+            self.cpp_info.components["gstcoretracers"].system_libs = thread_dep
             self.libraries.append("gstcoretracers")
 
-        self.cpp_info.components["gstreamer-full-1.0"].set_property("cmake_target_name", "gstreamer-full-1.0::gstreamer-full-1.0")
         self.cpp_info.components["gstreamer-full-1.0"].libs = ["gstreamer-full-1.0"]
         self.cpp_info.components["gstreamer-full-1.0"].libdirs = [os.path.join(self.package_folder, "lib")]
         self.cpp_info.components["gstreamer-full-1.0"].includedirs = [os.path.join(self.package_folder, "include", "gstreamer-1.0")]
