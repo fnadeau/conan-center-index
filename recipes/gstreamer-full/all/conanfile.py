@@ -87,7 +87,7 @@ GST_GOOD_MESON_OPTIONS = {
     'isomp4',
     'law',
     'level',
-    #'matroska', TODO: Add bzip2 dependency bzip2/1.0.8
+    'matroska',
     'monoscope',
     'multifile',
     'multipart',
@@ -107,6 +107,39 @@ GST_GOOD_MESON_OPTIONS = {
     'wavparse',
     'xingmux',
     'y4m',
+}
+
+GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS = {
+#    'adaptivedemux2',
+#    'aalib',
+#    'amrnb',
+#    'amrwbdec',
+    'bz2',
+#    'cairo',
+#    'directsound',
+#    'dv',
+#    'dv1394',
+#    'flac',
+#    'gdk-pixbuf',
+#    'gtk3',
+#    'jack',
+#    'jpeg',
+#    'lame',
+#    'libcaca',
+#    'mpg123',
+#    'oss',
+#    'oss4',
+#    'osxaudio',
+#    'osxvideo',
+#    'png',
+#    'pulse',
+#    'shout2',
+#    'speex',
+#    'taglib',
+#    'twolame',
+#    'vpx',
+#    'waveform',
+#    'wavpack',
 }
 
 # TODO check bad list
@@ -231,6 +264,7 @@ class PackageConan(ConanFile):
     options.update({f'gst_base_{_name}': [True, False] for _name in GST_BASE_MESON_OPTIONS_WITH_EXT_DEPS})
     options.update({f'gst_base_{_name}': [True, False] for _name in GST_BASE_MESON_OPTIONS_GL})
     options.update({f'gst_good_{_name}': [True, False] for _name in GST_GOOD_MESON_OPTIONS})
+    options.update({f'gst_good_{_name}': [True, False] for _name in GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS})
     options.update({f'gst_bad_{_name}': [True, False] for _name in GST_BAD_MESON_OPTIONS})
     options.update({f'gst_ugly_{_name}': [True, False] for _name in GST_UGLY_MESON_OPTIONS})
     options.update({f'gst_rtsp_server_{_name}': [True, False] for _name in GST_RTSP_SERVER_MESON_OPTIONS})
@@ -260,6 +294,7 @@ class PackageConan(ConanFile):
     default_options.update({f'gst_base_{_name}': True for _name in GST_BASE_MESON_OPTIONS_WITH_EXT_DEPS})
     default_options.update({f'gst_base_{_name}': True for _name in GST_BASE_MESON_OPTIONS_GL})
     default_options.update({f'gst_good_{_name}': True for _name in GST_GOOD_MESON_OPTIONS})
+    default_options.update({f'gst_good_{_name}': True for _name in GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS})
     default_options.update({f'gst_bad_{_name}': True for _name in GST_BAD_MESON_OPTIONS})
     default_options.update({f'gst_ugly_{_name}': True for _name in GST_UGLY_MESON_OPTIONS})
     default_options.update({f'gst_rtsp_server_{_name}': True for _name in GST_RTSP_SERVER_MESON_OPTIONS})
@@ -361,6 +396,9 @@ class PackageConan(ConanFile):
                 self.requires("libjpeg/9e")
             elif self.options.get_safe("gst_base_gl_jpeg") == "libjpeg-turbo":
                 self.requires("libjpeg-turbo/3.0.2")
+
+        if self.options.get_safe("gst_good_bz2"):
+            self.requires("bzip2/1.0.8")
 
     def validate(self):
         # TODO validate if still the case
@@ -672,22 +710,23 @@ class PackageConan(ConanFile):
         elif self.settings.os == "Android":
             self.cpp_info.components["gstreamer-1.0"].system_libs.append("log")
 
-        libm = ["m"] if self.settings.os in ["Linux", "FreeBSD"] else []
-        winsock2 = ["ws2_32"] if self.settings.os == "Windows" else []
+        bz2_dep = ["bzip2::bzip2"] if self.options.get_safe("gst_good_bz2") else []
         cocoa = ["Cocoa"] if self.settings.os == "Macos" else []
-        log = ["log"] if self.settings.os == "Android" else []
-        zlib_dep = ["zlib::zlib"]
         gio_dep = ["glib::gio-2.0"]
         gio_unix_dep = ["glib::gio-unix-2.0"]
         gmodule_dep = ["glib::gmodule-2.0"]
         libdrm_dep = ["libdrm::libdrm"] if self.settings.os in ["Linux"] else []
-        thread_dep = ["pthread"] if self.settings.os in ["Linux", "FreeBSD"] else []
+        libm = ["m"] if self.settings.os in ["Linux", "FreeBSD"] else []
+        log = ["log"] if self.settings.os == "Android" else []
         network_deps = [] # TODO: Probably required for Solaris
+        thread_dep = ["pthread"] if self.settings.os in ["Linux", "FreeBSD"] else []
+        winsock2 = ["ws2_32"] if self.settings.os == "Windows" else []
         wl_client_dep = ["wayland-client"] if self.settings.os == "Linux" else []
         x11_dep = []
         xi_dep = []
-        xvideo_dep = []
         xshm_dep = []
+        xvideo_dep = []
+        zlib_dep = ["zlib::zlib"]
 
         self._system_libs = libm + winsock2 + cocoa + log + thread_dep
 
@@ -853,7 +892,7 @@ class PackageConan(ConanFile):
                     ("mulaw", gstbase_dep, gstaudio_dep)
                 ],
                 "level": [("level", gstbase_dep, gstaudio_dep, libm)],
-                #"matroska": [("matroska", gstpbutils_dep, gstaudio_dep, gstriff_dep, gstvideo_dep, gsttag_dep, gstbase_dep, gst_dep, zlib_dep, bz2_dep, libm)],
+                "matroska": [("matroska", gstpbutils_dep, gstaudio_dep, gstriff_dep, gstvideo_dep, gsttag_dep, gstbase_dep, gst_dep, zlib_dep, bz2_dep, libm)],
                 "monoscope": [("monoscope", gstbase_dep, gstaudio_dep, gstvideo_dep)],
                 "multifile": [("multifile", gstvideo_dep, gstbase_dep, gstpbutils_dep, gio_dep)],
                 "multipart": [("multipart", gstbase_dep)],
