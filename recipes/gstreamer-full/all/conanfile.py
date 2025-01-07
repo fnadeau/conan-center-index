@@ -846,6 +846,7 @@ class PackageConan(ConanFile):
         winsock2 = ["ws2_32"] if self.settings.os == "Windows" else []
         wl_client_dep = ["wayland-client"] if self.settings.os == "Linux" else []
         x11_dep = []
+        x264_dep = ["libx264::libx264"]
         xi_dep = []
         xshm_dep = []
         xvideo_dep = []
@@ -1266,6 +1267,9 @@ class PackageConan(ConanFile):
                 'dvdlpcmdec': [("dvdlpcmdec", gstbase_dep, gstaudio_dep)],
                 'dvdsub': [("dvdsub", gstbase_dep, gstvideo_dep)],
                 'realmedia': [("realmedia", gstbase_dep, gstrtsp_dep, gstsdp_dep, gstpbutils_dep)],
+
+                # External dependencies
+                'x264': [("x264", gstbase_dep, x264_dep)],
             }
 
             ugly_options = GST_UGLY_MESON_OPTIONS.union(GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS)

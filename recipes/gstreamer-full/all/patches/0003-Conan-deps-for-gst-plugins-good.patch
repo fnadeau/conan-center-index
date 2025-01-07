@@ -1,0 +1,25 @@
+From f7597fce54b1b3ff2aec70388d192fa20a15d4a5 Mon Sep 17 00:00:00 2001
+From: Matthias Fuchs <matz.fuchs@gmx.at>
+Date: Wed, 8 Jan 2025 10:44:55 +0100
+Subject: [PATCH 3/3] Conan deps for gst-plugins-good
+
+---
+ subprojects/gst-plugins-good/gst/matroska/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/subprojects/gst-plugins-good/gst/matroska/meson.build b/subprojects/gst-plugins-good/gst/matroska/meson.build
+index ab2b6c6261..6d900de124 100644
+--- a/subprojects/gst-plugins-good/gst/matroska/meson.build
++++ b/subprojects/gst-plugins-good/gst/matroska/meson.build
+@@ -12,7 +12,7 @@ matroska_sources = [
+   'lzo.c',
+ ]
+ 
+-bz2_dep = cc.find_library('bz2', required : get_option('bz2'))
++bz2_dep = dependency('bzip2', required : get_option('bz2'))
+ cdata.set('HAVE_BZ2', bz2_dep.found() and cc.has_header('bzlib.h'))
+ 
+ gstmatroska = library('gstmatroska',
+-- 
+2.32.0.windows.1
+
