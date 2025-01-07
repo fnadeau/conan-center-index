@@ -119,14 +119,14 @@ GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS = {
 #    'directsound',
 #    'dv',
 #    'dv1394',
-#    'flac',
-#    'gdk-pixbuf',
+    'flac',
+    'gdk-pixbuf',
 #    'gtk3',
 #    'jack',
 #    'jpeg',
-#    'lame',
+    'lame',
 #    'libcaca',
-#    'mpg123',
+    'mpg123',
 #    'oss',
 #    'oss4',
 #    'osxaudio',
@@ -135,9 +135,9 @@ GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS = {
 #    'pulse',
 #    'shout2',
 #    'speex',
-#    'taglib',
+    'taglib',
 #    'twolame',
-#    'vpx',
+    'vpx',
 #    'waveform',
 #    'wavpack',
 }
@@ -148,17 +148,15 @@ GST_BAD_MESON_OPTIONS = {
     'adpcmdec',
     'adpcmenc',
     'aiff',
-    #'analyticsoverlay', # require pangocairo
     'asfmux',
     'audiobuffersplit',
     'audiofxbad',
-    'audiolatency',
     'audiomixmatrix',
+    'audiolatency',
     'audiovisualizers',
     'autoconvert',
     'bayer',
     'camerabin2',
-    #'codec2json',
     'codecalpha',
     'codectimestamper',
     'coloreffects',
@@ -218,11 +216,102 @@ GST_BAD_MESON_OPTIONS = {
     'y4m',
 }
 
+GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS = {
+    #'aes',
+    #'analyticsoverlay',
+    #'assrender',
+    #'aom',
+    #'avtp',
+    #'bs2b',
+    #'bz2',
+    #'chromaprint',
+    #'closedcaption',
+    #'codec2json',
+    #'colormanagement',
+    #'curl',
+    #'dash',
+    #'dc1394',
+    #'directfb',
+    #'dtls',
+    #'dts',
+    #'faac',
+    #'faad',
+    #'fdkaac',
+    #'flite',
+    #'fluidsynth',
+    #'gme',
+    #'gs',
+    #'gsm',
+    #'gtk',
+    #'hls',
+    #'iqa',
+    #'isac',
+    #'ladspa',
+    #'lc3',
+    #'ldac',
+    #'libde265',
+    #'lv2',
+    #'mdns',
+    #'modplug',
+    #'mpeg2enc',
+    #'mplex',
+    #'musepack',
+    #'neon',
+    #'onnx',
+    #'openal',
+    #'openaptx',
+    #'opencv',
+    #'openexr',
+    #'openh264',
+    #'openjpeg',
+    #'openmpt',
+    #'openni2',
+    #'opus',
+    #'qroverlay',
+    #'qt6d3d11',
+    #'resindvd',
+    #'rsvg',
+    #'rtmp',
+    #'sbc',
+    #'sctp',
+    #'smoothstreaming',
+    #'sndfile',
+    #'soundtouch',
+    #'spandsp',
+    #'srt',
+    #'srtp',
+    #'svtav1',
+    #'svthevcenc',
+    #'teletextdec',
+    #'ttml',
+    #'voaacenc',
+    #'voamrwbenc',
+    #'vulkan',
+    #'wayland',
+    #'webrtc',
+    #'webrtcdsp',
+    #'webp',
+    #'wildmidi',
+    #'wpe',
+    #'x265',
+    #'zxing',
+    #'zbar',
+}
+
 GST_UGLY_MESON_OPTIONS = {
     'asfdemux',
     'dvdlpcmdec',
     'dvdsub',
     'realmedia',
+}
+
+GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS = {
+    #'a52dec',
+    #'cdio',
+    #'dvdread',
+    #'mpeg2dec',
+    #'sidplay',
+    #'x264',
 }
 
 GST_RTSP_SERVER_MESON_OPTIONS = {
@@ -266,7 +355,9 @@ class PackageConan(ConanFile):
     options.update({f'gst_good_{_name}': [True, False] for _name in GST_GOOD_MESON_OPTIONS})
     options.update({f'gst_good_{_name}': [True, False] for _name in GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS})
     options.update({f'gst_bad_{_name}': [True, False] for _name in GST_BAD_MESON_OPTIONS})
+    options.update({f'gst_bad_{_name}': [True, False] for _name in GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS})
     options.update({f'gst_ugly_{_name}': [True, False] for _name in GST_UGLY_MESON_OPTIONS})
+    options.update({f'gst_ugly_{_name}': [True, False] for _name in GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS})
     options.update({f'gst_rtsp_server_{_name}': [True, False] for _name in GST_RTSP_SERVER_MESON_OPTIONS})
 
     default_options = {
@@ -296,7 +387,9 @@ class PackageConan(ConanFile):
     default_options.update({f'gst_good_{_name}': True for _name in GST_GOOD_MESON_OPTIONS})
     default_options.update({f'gst_good_{_name}': True for _name in GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS})
     default_options.update({f'gst_bad_{_name}': True for _name in GST_BAD_MESON_OPTIONS})
+    default_options.update({f'gst_bad_{_name}': True for _name in GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS})
     default_options.update({f'gst_ugly_{_name}': True for _name in GST_UGLY_MESON_OPTIONS})
+    default_options.update({f'gst_ugly_{_name}': True for _name in GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS})
     default_options.update({f'gst_rtsp_server_{_name}': True for _name in GST_RTSP_SERVER_MESON_OPTIONS})
 
     def export_sources(self):
@@ -339,11 +432,17 @@ class PackageConan(ConanFile):
         if not self.options.with_good:
             for option in GST_GOOD_MESON_OPTIONS:
                 delattr(self.options, f'gst_good_{option}')
+            for option in GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS:
+                delattr(self.options, f'gst_good_{option}')
         if not self.options.with_bad:
             for option in GST_BAD_MESON_OPTIONS:
                 delattr(self.options, f'gst_bad_{option}')
+            for option in GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS:
+                delattr(self.options, f'gst_bad_{option}')
         if not self.options.with_ugly:
             for option in GST_UGLY_MESON_OPTIONS:
+                delattr(self.options, f'gst_ugly_{option}')
+            for option in GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS:
                 delattr(self.options, f'gst_ugly_{option}')
         if not self.options.with_rtsp_server:
             for option in GST_RTSP_SERVER_MESON_OPTIONS:
@@ -399,6 +498,18 @@ class PackageConan(ConanFile):
 
         if self.options.get_safe("gst_good_bz2"):
             self.requires("bzip2/1.0.8")
+        if self.options.get_safe("gst_good_flac"):
+            self.requires("flac/1.4.3")
+        if self.options.get_safe("gst_good_gdk-pixbuf"):
+            self.requires("gdk-pixbuf/2.42.10")
+        if self.options.get_safe("gst_good_lame"):
+            self.requires("libmp3lame/3.100")
+        if self.options.get_safe("gst_good_mpg123"):
+            self.requires("mpg123/1.31.2")
+        if self.options.get_safe("gst_good_taglib"):
+            self.requires("taglib/2.0")
+        if self.options.get_safe("gst_good_vpx"):
+            self.requires("libvpx/1.14.1")
 
     def validate(self):
         # TODO validate if still the case
@@ -605,15 +716,21 @@ class PackageConan(ConanFile):
             tc.subproject_options["gst-plugins-good"] = []
             for option in GST_GOOD_MESON_OPTIONS:
                 tc.subproject_options["gst-plugins-good"].append({option: 'enabled' if self.options.get_safe(f'gst_good_{option}') else 'disabled'})
+            for option in GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS:
+                tc.subproject_options["gst-plugins-good"].append({option: 'enabled' if self.options.get_safe(f'gst_good_{option}') else 'disabled'})
 
         if self.options.with_bad:
             tc.subproject_options["gst-plugins-bad"] = []
             for option in GST_BAD_MESON_OPTIONS:
                 tc.subproject_options["gst-plugins-bad"].append({option: 'enabled' if self.options.get_safe(f'gst_bad_{option}') else 'disabled'})
+            for option in GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS:
+                tc.subproject_options["gst-plugins-bad"].append({option: 'enabled' if self.options.get_safe(f'gst_bad_{option}') else 'disabled'})
 
         if self.options.with_ugly:
             tc.subproject_options["gst-plugins-ugly"] = []
             for option in GST_UGLY_MESON_OPTIONS:
+                tc.subproject_options["gst-plugins-ugly"].append({option: 'enabled' if self.options.get_safe(f'gst_ugly_{option}') else 'disabled'})
+            for option in GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS:
                 tc.subproject_options["gst-plugins-ugly"].append({option: 'enabled' if self.options.get_safe(f'gst_ugly_{option}') else 'disabled'})
 
         if self.options.with_rtsp_server:
@@ -712,14 +829,20 @@ class PackageConan(ConanFile):
 
         bz2_dep = ["bzip2::bzip2"] if self.options.get_safe("gst_good_bz2") else []
         cocoa = ["Cocoa"] if self.settings.os == "Macos" else []
+        flac_dep = ["flac::flac"] if self.options.get_safe("gst_good_flac") else []
+        gdkpixbuf_dep = ["gdk-pixbuf::gdk-pixbuf"] if self.options.get_safe("gst_good_gdk-pixbuf") else []
         gio_dep = ["glib::gio-2.0"]
         gio_unix_dep = ["glib::gio-unix-2.0"]
         gmodule_dep = ["glib::gmodule-2.0"]
+        lame_dep = ["libmp3lame::libmp3lame"] if self.options.get_safe("gst_good_lame") else []
         libdrm_dep = ["libdrm::libdrm"] if self.settings.os in ["Linux"] else []
         libm = ["m"] if self.settings.os in ["Linux", "FreeBSD"] else []
         log = ["log"] if self.settings.os == "Android" else []
+        mpg123_dep = ["mpg123::libmpg123"] if self.options.get_safe("gst_good_mpg123") else []
         network_deps = [] # TODO: Probably required for Solaris
+        taglib_dep = ["taglib::taglib"] if self.options.get_safe("gst_good_taglib") else []
         thread_dep = ["pthread"] if self.settings.os in ["Linux", "FreeBSD"] else []
+        vpx_dep = ["libvpx::libvpx"] if self.options.get_safe("gst_good_vpx") else []
         winsock2 = ["ws2_32"] if self.settings.os == "Windows" else []
         wl_client_dep = ["wayland-client"] if self.settings.os == "Linux" else []
         x11_dep = []
@@ -728,6 +851,8 @@ class PackageConan(ConanFile):
         xvideo_dep = []
         zlib_dep = ["zlib::zlib"]
 
+        # List of libs that need to be in system_requires rather than requires
+        # TODO cocoa seems to belong to framework rather than system_requires
         self._system_libs = libm + winsock2 + cocoa + log + thread_dep
 
         gst_dep = ["gstreamer-1.0"]
@@ -912,9 +1037,42 @@ class PackageConan(ConanFile):
                 "wavparse": [("wavparse", gstbase_dep, gstpbutils_dep, gstriff_dep, gstaudio_dep, gsttag_dep, libm)],
                 "xingmux": [("xingmux", gstbase_dep)],
                 "y4m": [("y4menc", gstbase_dep, gstvideo_dep)],
+
+                # External dependencies
+                #"adaptivedemux2",
+                #"aalib",
+                #"amrnb",
+                #"amrwbdec",
+                "bz2": [], # Doesn't build lib, only add bz2 support to matroska
+                #"cairo",
+                #"directsound",
+                #"dv",
+                #"dv1394",
+                "flac": [("flac", gstbase_dep, gsttag_dep, gstaudio_dep, flac_dep)],
+                "gdk-pixbuf": [("gdkpixbuf", gstbase_dep, gstvideo_dep, gstcontroller_dep, gdkpixbuf_dep)],
+                #"gtk3",
+                #"jack",
+                #"jpeg",
+                "lame": [("lame", gstaudio_dep, lame_dep)],
+                #"libcaca",
+                "mpg123": [("mpg123", gstaudio_dep, mpg123_dep)],
+                #"oss",
+                #"oss4",
+                #"osxaudio",
+                #"osxvideo",
+                #"png",
+                #"pulse",
+                #"shout2",
+                #"speex",
+                "taglib": [("taglib", gsttag_dep, taglib_dep)],
+                #"twolame",
+                "vpx": [("vpx", gstbase_dep, gsttag_dep, gstvideo_dep, vpx_dep)],
+                #"waveform",
+                #"wavpack",
             }
 
-            self._add_plugin_components_loop(GST_GOOD_MESON_OPTIONS, 'gst_good', good_plugins)
+            base_options = GST_GOOD_MESON_OPTIONS.union(GST_GOOD_MESON_OPTIONS_WITH_EXT_DEPS)
+            self._add_plugin_components_loop(base_options, 'gst_good', good_plugins)
 
         if self.options.with_bad:
             gsturidownloader_dep = self._add_library_components("uridownloader", gstbase_dep)
@@ -1016,9 +1174,91 @@ class PackageConan(ConanFile):
                 'videosignal': [("videosignal", gstbase_dep, gstvideo_dep)],
                 'vmnc': [("vmnc", gstbase_dep, gstvideo_dep)],
                 'y4m': [("y4mdec", gstbase_dep, gstvideo_dep)],
+
+                # External dependencies
+                #'aes',
+                #'analyticsoverlay',
+                #'assrender',
+                #'aom',
+                #'avtp',
+                #'bs2b',
+                #'bz2',
+                #'chromaprint',
+                #'closedcaption',
+                #'codec2json',
+                #'colormanagement',
+                #'curl',
+                #'dash',
+                #'dc1394',
+                #'directfb',
+                #'dtls',
+                #'dts',
+                #'faac',
+                #'faad',
+                #'fdkaac',
+                #'flite',
+                #'fluidsynth',
+                #'gme',
+                #'gs',
+                #'gsm',
+                #'gtk',
+                #'hls',
+                #'iqa',
+                #'isac',
+                #'ladspa',
+                #'lc3',
+                #'ldac',
+                #'libde265',
+                #'lv2',
+                #'mdns',
+                #'modplug',
+                #'mpeg2enc',
+                #'mplex',
+                #'musepack',
+                #'neon',
+                #'onnx',
+                #'openal',
+                #'openaptx',
+                #'opencv',
+                #'openexr',
+                #'openh264',
+                #'openjpeg',
+                #'openmpt',
+                #'openni2',
+                #'opus',
+                #'qroverlay',
+                #'qt6d3d11',
+                #'resindvd',
+                #'rsvg',
+                #'rtmp',
+                #'sbc',
+                #'sctp',
+                #'smoothstreaming',
+                #'sndfile',
+                #'soundtouch',
+                #'spandsp',
+                #'srt',
+                #'srtp',
+                #'svtav1',
+                #'svthevcenc',
+                #'teletextdec',
+                #'ttml',
+                #'voaacenc',
+                #'voamrwbenc',
+                #'vulkan',
+                #'wayland',
+                #'webrtc',
+                #'webrtcdsp',
+                #'webp',
+                #'wildmidi',
+                #'wpe',
+                #'x265',
+                #'zxing',
+                #'zbar',
             }
 
-            self._add_plugin_components_loop(GST_BAD_MESON_OPTIONS, 'gst_bad', bad_plugins)
+            bad_options = GST_BAD_MESON_OPTIONS.union(GST_BAD_MESON_OPTIONS_WITH_EXT_DEPS)
+            self._add_plugin_components_loop(bad_options, 'gst_bad', bad_plugins)
 
         if self.options.with_ugly:
             ugly_plugins = {
@@ -1028,7 +1268,8 @@ class PackageConan(ConanFile):
                 'realmedia': [("realmedia", gstbase_dep, gstrtsp_dep, gstsdp_dep, gstpbutils_dep)],
             }
 
-            self._add_plugin_components_loop(GST_UGLY_MESON_OPTIONS, 'gst_ugly', ugly_plugins)
+            ugly_options = GST_UGLY_MESON_OPTIONS.union(GST_UGLY_MESON_OPTIONS_WITH_EXT_DEPS)
+            self._add_plugin_components_loop(ugly_options, 'gst_ugly', ugly_plugins)
 
         if self.options.with_libav:
             libav_deps = ["ffmpeg::avfilter", "ffmpeg::avformat", "ffmpeg::avcodec", "ffmpeg::avutil"]
