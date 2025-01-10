@@ -105,6 +105,8 @@ class GLibConan(ConanFile):
         tc.project_options["tests"] = "false"
         tc.project_options["libelf"] = "enabled" if self.options.get_safe("with_elf") else "disabled"
 
+        tc.project_options["sysprof"] = "disabled"
+
         if self.settings.os == "Neutrino":
             tc.cross_build["host"]["system"] = "qnx"
             tc.c_link_args.append("-lm")
