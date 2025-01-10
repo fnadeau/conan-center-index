@@ -228,7 +228,7 @@ class GStPluginsBadConan(ConanFile):
     def requirements(self):
         self.requires(f"gstreamer/{self.version}", transitive_headers=True, transitive_libs=True)
         self.requires(f"gst-plugins-base/{self.version}", transitive_headers=True, transitive_libs=True)
-        self.requires("glib/2.78.3", transitive_headers=True, transitive_libs=True)
+        self.requires("glib/2.81.0", transitive_headers=True, transitive_libs=True)
         self.requires("gst-orc/0.4.40")
         if self.options.with_introspection:
             self.requires("gobject-introspection/1.78.1")

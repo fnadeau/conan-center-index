@@ -51,7 +51,7 @@ class GStPluginsUglyConan(ConanFile):
     def requirements(self):
         self.requires(f"gstreamer/{self.version}", transitive_headers=True, transitive_libs=True)
         self.requires(f"gst-plugins-base/{self.version}", transitive_headers=True, transitive_libs=True)
-        self.requires("glib/2.78.3", transitive_headers=True, transitive_libs=True)
+        self.requires("glib/2.81.0", transitive_headers=True, transitive_libs=True)
         if self.options.with_libx264:
             self.requires("libx264/cci.20240224")
 

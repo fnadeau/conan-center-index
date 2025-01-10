@@ -135,7 +135,7 @@ class GStPluginsGoodConan(ConanFile):
     def requirements(self):
         self.requires(f"gstreamer/{self.version}", transitive_headers=True, transitive_libs=True)
         self.requires(f"gst-plugins-base/{self.version}", transitive_headers=True, transitive_libs=True)
-        self.requires("glib/2.78.3", transitive_headers=True, transitive_libs=True)
+        self.requires("glib/2.81.0", transitive_headers=True, transitive_libs=True)
         self.requires("gst-orc/0.4.40")
 
         self.requires("zlib/[>=1.2.11 <2]")
