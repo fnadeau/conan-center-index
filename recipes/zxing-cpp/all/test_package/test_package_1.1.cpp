@@ -1,9 +1,9 @@
-#include "BarcodeFormat.h"
-#include "BitMatrix.h"
-#include "BitMatrixIO.h"
-#include "CharacterSet.h"
-#include "MultiFormatWriter.h"
-#include "TextUtfEncoding.h"
+#include "ZXing/BarcodeFormat.h"
+#include "ZXing/BitMatrix.h"
+#include "ZXing/BitMatrixIO.h"
+#include "ZXing/CharacterSet.h"
+#include "ZXing/MultiFormatWriter.h"
+#include "ZXing/TextUtfEncoding.h"
 
 #include <algorithm>
 #include <cctype>
