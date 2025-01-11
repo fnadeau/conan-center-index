@@ -63,22 +63,6 @@ diff --git a/ext/bz2/meson.build b/ext/bz2/meson.build
      bz2_sources,
      c_args : gst_plugins_bad_args,
 
-diff --git a/ext/zxing/gstzxing.cpp b/ext/zxing/gstzxing.cpp
---- a/ext/zxing/gstzxing.cpp
-+++ b/ext/zxing/gstzxing.cpp
-@@ -60,9 +60,9 @@
- 
- #include <gst/video/video.h>
- 
--#include "ReadBarcode.h"
--#include "TextUtfEncoding.h"
--#include "ZXVersion.h"
-+#include "ZXing/ReadBarcode.h"
-+#include "ZXing/TextUtfEncoding.h"
-+#include "ZXing/ZXVersion.h"
- 
- using namespace ZXing;
- 
 diff --git a/ext/faac/meson.build b/ext/faac/meson.build
 --- a/ext/faac/meson.build
 +++ b/ext/faac/meson.build
