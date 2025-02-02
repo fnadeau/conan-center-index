@@ -1,0 +1,42 @@
+From a21dd54fea7d47ab07beabbf1d92326acd51cc12 Mon Sep 17 00:00:00 2001
+From: Matthias Fuchs <matz.fuchs@gmx.at>
+Date: Wed, 8 Jan 2025 10:44:55 +0100
+Subject: [PATCH 3/3] Conan deps for gst-plugins-good
+
+---
+ subprojects/gst-plugins-good/ext/lame/meson.build     | 4 ++--
+ subprojects/gst-plugins-good/gst/matroska/meson.build | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/subprojects/gst-plugins-good/ext/lame/meson.build b/subprojects/gst-plugins-good/ext/lame/meson.build
+index 7820a801d8..12cf12e6c4 100644
+--- a/subprojects/gst-plugins-good/ext/lame/meson.build
++++ b/subprojects/gst-plugins-good/ext/lame/meson.build
+@@ -16,9 +16,9 @@ if have_lame
+     lame_extra_c_args += ['-DGSTLAME_PRESET']
+   endif
+ else
+-  lame_dep = dependency('mp3lame', fallback: ['lame', 'lame_dep'], required: lame_option)
++  lame_dep = dependency('libmp3lame', fallback: ['lame', 'lame_dep'], required: lame_option)
+   have_lame = lame_dep.found()
+-  lame_extra_c_args += ['-DHAVE_LAME_SET_VBR_QUALITY', '-DGSTLAME_PRESET', '-DLAME_SUBPROJECT']
++  lame_extra_c_args += ['-DHAVE_LAME_SET_VBR_QUALITY', '-DGSTLAME_PRESET']
+ endif
+ 
+ if not have_lame
+diff --git a/subprojects/gst-plugins-good/gst/matroska/meson.build b/subprojects/gst-plugins-good/gst/matroska/meson.build
+index ab2b6c6261..6d900de124 100644
+--- a/subprojects/gst-plugins-good/gst/matroska/meson.build
++++ b/subprojects/gst-plugins-good/gst/matroska/meson.build
+@@ -12,7 +12,7 @@ matroska_sources = [
+   'lzo.c',
+ ]
+ 
+-bz2_dep = cc.find_library('bz2', required : get_option('bz2'))
++bz2_dep = dependency('bzip2', required : get_option('bz2'))
+ cdata.set('HAVE_BZ2', bz2_dep.found() and cc.has_header('bzlib.h'))
+ 
+ gstmatroska = library('gstmatroska',
+-- 
+2.32.0.windows.1
+
