@@ -1028,7 +1028,7 @@ class QtConan(ConanFile):
                 requires.append("Core")
             self.cpp_info.components[componentname].requires = _get_corrected_reqs(requires)
 
-        def _create_plugin(pluginname, libname, plugintype, requires):
+        def _create_plugin(pluginname, libname, plugintype, requires, system_libs=None):
             componentname = f"qt{pluginname}"
             assert componentname not in self.cpp_info.components, f"Plugin {pluginname} already present in self.cpp_info.components"
             self.cpp_info.components[componentname].set_property("cmake_target_name", f"Qt6::{pluginname}")
@@ -1039,6 +1039,7 @@ class QtConan(ConanFile):
             if "Core" not in requires:
                 requires.append("Core")
             self.cpp_info.components[componentname].requires = _get_corrected_reqs(requires)
+            self.cpp_info.components[componentname].system_libs = system_libs if system_libs else []
 
         core_reqs = ["zlib::zlib"]
         if self.options.with_pcre2:
@@ -1155,13 +1156,6 @@ class QtConan(ConanFile):
                 # https://github.com/qt/qtbase/blob/v6.8.2/src/plugins/platforms/windows/CMakeLists.txt#L202
                 if Version(self.version) >= "6.8.2":
                     self.cpp_info.components["qtQWindowsIntegrationPlugin"].system_libs += ["uiautomationcore"]
-                # https://github.com/qt/qtmultimedia/blob/v6.8.2/src/plugins/multimedia/windows/CMakeLists.txt#L48
-                # https://github.com/qt/qtmultimedia/blob/v6.8.2/cmake/FindWMF.cmake#L21
-                self.cpp_info.components["QWindowsMediaPlugin"].system_libs += [
-                    "amstrmid", "d3d9", "dmoguids", "dxva2", "evr", "gdi32", "ksuser", "mf", "mfcore", "mfplat",
-                    "mfreadwrite", "mfuuid", "msdmo", "ole32", "oleaut32", "propsys", "shlwapi", "strmiids",
-                    "user32", "uuid", "winmm", "wmcodecdspuuid"
-                ]
             elif self.settings.os == "Android":
                 _create_plugin("QAndroidIntegrationPlugin", "qtforandroid", "platforms", ["Core", "Gui"])
                 # https://github.com/qt/qtbase/blob/v6.6.1/src/plugins/platforms/android/CMakeLists.txt#L68-L70
@@ -1219,11 +1213,9 @@ class QtConan(ConanFile):
         if self.options.with_pq:
             _create_plugin("QPSQLDriverPlugin", "qsqlpsql", "sqldrivers", ["libpq::libpq"])
         if self.options.with_odbc:
-            _create_plugin("QODBCDriverPlugin", "qsqlodbc", "sqldrivers", [])
-            if self.settings.os != "Windows":
-                self.cpp_info.components["QODBCDriverPlugin"].requires.append("odbc::odbc")
-            else:
-                self.cpp_info.components["QODBCDriverPlugin"].system_libs.append("odbc32")
+            requites = ["odbc::odbc"] if self.settings.os != "Windows" else []
+            system_libs = ["odbc32"] if self.settings.os == "Windows" else []
+            _create_plugin("QODBCDriverPlugin", "qsqlodbc", "sqldrivers", requites, system_libs)
         networkReqs = []
         if self.options.openssl:
             networkReqs.append("openssl::openssl")
@@ -1383,7 +1375,14 @@ class QtConan(ConanFile):
                     "gstreamer::gstreamer",
                     "gst-plugins-base::gst-plugins-base"])
             elif self.options.get_safe("with_wmf", False):
-                _create_plugin("QWindowsMediaPlugin", "windowsmediaplugin", "multimedia", [])
+                # https://github.com/qt/qtmultimedia/blob/v6.8.2/src/plugins/multimedia/windows/CMakeLists.txt#L48
+                # https://github.com/qt/qtmultimedia/blob/v6.8.2/cmake/FindWMF.cmake#L21
+                system_libs = [
+                    "amstrmid", "d3d9", "dmoguids", "dxva2", "evr", "gdi32", "ksuser", "mf", "mfcore", "mfplat",
+                    "mfreadwrite", "mfuuid", "msdmo", "ole32", "oleaut32", "propsys", "shlwapi", "strmiids",
+                    "user32", "uuid", "winmm", "wmcodecdspuuid"
+                ]
+                _create_plugin("QWindowsMediaPlugin", "windowsmediaplugin", "multimedia", [], system_libs)
 
         if self.options.get_safe("qtpositioning"):
             _create_module("Positioning", [])
