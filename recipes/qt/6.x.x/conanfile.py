@@ -68,6 +68,7 @@ class QtConan(ConanFile):
         "with_x11": [True, False],
         "with_egl": [True, False],
         "with_wmf": [True, False],
+        "with_wmsdk": [True, False],
 
         "gui": [True, False],
         "widgets": [True, False],
@@ -114,6 +115,7 @@ class QtConan(ConanFile):
         "with_x11": True,
         "with_egl": False,
         "with_wmf": False,
+        "with_wmsdk": False,
 
         "gui": True,
         "widgets": True,
@@ -180,6 +182,7 @@ class QtConan(ConanFile):
             del self.options.with_gstreamer
         else:
             del self.options.with_wmf
+            del self.options.with_wmsdk
 
         if self.settings.os != "Linux":
             self.options.qtwayland = False
@@ -255,6 +258,7 @@ class QtConan(ConanFile):
             del self.options.with_pulseaudio
             self.options.rm_safe("with_gstreamer")
             self.options.rm_safe("with_wmf")
+            self.options.rm_safe("with_wmsdk")
 
         if self.settings.os in ("FreeBSD", "Linux"):
             if self.options.get_safe("qtwebengine"):
@@ -565,7 +569,8 @@ class QtConan(ConanFile):
                               ("with_brotli", "brotli"),
                               ("with_gssapi", "gssapi"),
                               ("with_egl", "egl"),
-                              ("with_gstreamer", "gstreamer")]:
+                              ("with_gstreamer", "gstreamer"),
+                              ("with_wmsdk", "wmsdk")]:
             tc.variables[f"FEATURE_{conf_arg}"] = ("ON" if self.options.get_safe(opt, False) else "OFF")
 
 
