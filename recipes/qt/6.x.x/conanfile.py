@@ -1140,6 +1140,16 @@ class QtConan(ConanFile):
                     "advapi32", "dwmapi", "gdi32", "imm32", "ole32", "oleaut32", "setupapi", "shell32", "shlwapi",
                     "user32", "winmm", "winspool", "wtsapi32", "shcore", "comdlg32", "d3d9", "runtimeobject"
                 ]
+                # https://github.com/qt/qtbase/blob/v6.8.2/src/plugins/platforms/windows/CMakeLists.txt#L202
+                if Version(self.version) >= "6.8.2":
+                    self.cpp_info.components["qtQWindowsIntegrationPlugin"].system_libs += ["uiautomationcore"]
+                # https://github.com/qt/qtmultimedia/blob/v6.8.2/src/plugins/multimedia/windows/CMakeLists.txt#L48
+                # https://github.com/qt/qtmultimedia/blob/v6.8.2/cmake/FindWMF.cmake#L21
+                self.cpp_info.components["qtQWindowsMediaPlugin"].system_libs += [
+                    "amstrmid", "d3d9", "dmoguids", "dxva2", "evr", "gdi32", "ksuser", "mf", "mfcore", "mfplat",
+                    "mfreadwrite", "mfuuid", "msdmo", "ole32", "oleaut32", "propsys", "shlwapi", "strmiids",
+                    "user32", "uuid", "winmm", "wmcodecdspuuid"
+                ]
             elif self.settings.os == "Android":
                 _create_plugin("QAndroidIntegrationPlugin", "qtforandroid", "platforms", ["Core", "Gui"])
                 # https://github.com/qt/qtbase/blob/v6.6.1/src/plugins/platforms/android/CMakeLists.txt#L68-L70
