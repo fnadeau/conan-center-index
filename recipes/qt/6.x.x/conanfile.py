@@ -50,6 +50,7 @@ class QtConan(ConanFile):
         "with_fontconfig": [True, False],
         "with_icu": [True, False],
         "with_harfbuzz": [True, False],
+        "with_libb2": [True, False],
         "with_libjpeg": ["libjpeg", "libjpeg-turbo", False],
         "with_libpng": [True, False],
         "with_sqlite3": [True, False],
@@ -67,6 +68,8 @@ class QtConan(ConanFile):
         "with_md4c": [True, False],
         "with_x11": [True, False],
         "with_egl": [True, False],
+        "with_wmf": [True, False],
+        "with_wmsdk": [True, False],
 
         "gui": [True, False],
         "widgets": [True, False],
@@ -95,6 +98,7 @@ class QtConan(ConanFile):
         "with_fontconfig": True,
         "with_icu": True,
         "with_harfbuzz": True,
+        "with_libb2": False,
         "with_libjpeg": False,
         "with_libpng": True,
         "with_sqlite3": True,
@@ -112,6 +116,8 @@ class QtConan(ConanFile):
         "with_md4c": True,
         "with_x11": True,
         "with_egl": False,
+        "with_wmf": False,
+        "with_wmsdk": False,
 
         "gui": True,
         "widgets": True,
@@ -175,6 +181,11 @@ class QtConan(ConanFile):
         if self.settings.os == "Windows":
             self.options.opengl = "dynamic"
             del self.options.with_gssapi
+            del self.options.with_gstreamer
+        else:
+            del self.options.with_wmf
+            del self.options.with_wmsdk
+
         if self.settings.os != "Linux":
             self.options.qtwayland = False
 
@@ -248,6 +259,9 @@ class QtConan(ConanFile):
             del self.options.with_openal
             del self.options.with_gstreamer
             del self.options.with_pulseaudio
+            self.options.rm_safe("with_gstreamer")
+            self.options.rm_safe("with_wmf")
+            self.options.rm_safe("with_wmsdk")
 
         if self.settings.os in ("FreeBSD", "Linux"):
             if self.options.get_safe("qtwebengine"):
@@ -360,6 +374,8 @@ class QtConan(ConanFile):
             self.requires("icu/74.2")
         if self.options.get_safe("with_harfbuzz", False) and not self.options.multiconfiguration:
             self.requires("harfbuzz/8.3.0")
+        if self.options.with_libb2:
+            self.requires("libb2/20190723")
         if self.options.get_safe("with_libjpeg", False) and not self.options.multiconfiguration:
             if self.options.with_libjpeg == "libjpeg-turbo":
                 self.requires("libjpeg-turbo/[>=3.0 <3.1]")
@@ -439,6 +455,8 @@ class QtConan(ConanFile):
         ms.generate()
 
         tc = CMakeDeps(self)
+        tc.set_property("libb2", "cmake_file_name", "Libb2")
+        tc.set_property("libb2", "cmake_target_name", "Libb2::Libb2")
         tc.set_property("libdrm", "cmake_file_name", "Libdrm")
         tc.set_property("libdrm::libdrm_libdrm", "cmake_target_name", "Libdrm::Libdrm")
         tc.set_property("wayland", "cmake_file_name", "Wayland")
@@ -558,7 +576,8 @@ class QtConan(ConanFile):
                               ("with_brotli", "brotli"),
                               ("with_gssapi", "gssapi"),
                               ("with_egl", "egl"),
-                              ("with_gstreamer", "gstreamer")]:
+                              ("with_gstreamer", "gstreamer"),
+                              ("with_wmsdk", "wmsdk")]:
             tc.variables[f"FEATURE_{conf_arg}"] = ("ON" if self.options.get_safe(opt, False) else "OFF")
 
 
@@ -566,6 +585,7 @@ class QtConan(ConanFile):
                               ("with_doubleconversion", "doubleconversion"),
                               ("with_freetype", "freetype"),
                               ("with_harfbuzz", "harfbuzz"),
+                              ("with_libb2", "libb2"),
                               ("with_libjpeg", "jpeg"),
                               ("with_libpng", "png"),
                               ("with_sqlite3", "sqlite"),
@@ -1364,10 +1384,12 @@ class QtConan(ConanFile):
             _create_module("MultimediaWidgets", ["Multimedia", "Widgets", "Gui"])
             if self.options.qtdeclarative and qt_quick_enabled:
                 _create_module("MultimediaQuick", ["Multimedia", "Quick"])
-            if self.options.with_gstreamer:
+            if self.options.get_safe("with_gstreamer", False):
                 _create_plugin("QGstreamerMediaPlugin", "gstreamermediaplugin", "multimedia", [
                     "gstreamer::gstreamer",
                     "gst-plugins-base::gst-plugins-base"])
+            elif self.options.get_safe("with_wmf", False):
+                _create_plugin("QWindowsMediaPlugin", "windowsmediaplugin", "multimedia", [])
 
         if self.options.get_safe("qtpositioning"):
             _create_module("Positioning", [])
