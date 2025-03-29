@@ -1174,12 +1174,12 @@ class QtConan(ConanFile):
                 if self.settings.os in ["iOS", "tvOS"]:
                     _create_plugin("QIOSIntegrationPlugin", "qios", "platforms", [])
                     # https://github.com/qt/qtbase/blob/v6.6.1/src/plugins/platforms/ios/CMakeLists.txt#L32-L37
-                    self.cpp_info.components["QIOSIntegrationPlugin"].frameworks = [
+                    self.cpp_info.components["qtQIOSIntegrationPlugin"].frameworks = [
                         "AudioToolbox", "Foundation", "Metal", "QuartzCore", "UIKit", "CoreGraphics"
                     ]
                     if self.settings.os != "tvOS":
                         # https://github.com/qt/qtbase/blob/v6.6.1/src/plugins/platforms/ios/CMakeLists.txt#L66-L68
-                        self.cpp_info.components["QIOSIntegrationPlugin"].frameworks += [
+                        self.cpp_info.components["qtQIOSIntegrationPlugin"].frameworks += [
                             "AssetsLibrary", "UniformTypeIdentifiers", "Photos",
                         ]
                 elif self.settings.os == "watchOS":
@@ -1207,9 +1207,9 @@ class QtConan(ConanFile):
         if self.options.with_odbc:
             _create_plugin("QODBCDriverPlugin", "qsqlodbc", "sqldrivers", [])
             if self.settings.os != "Windows":
-                self.cpp_info.components["QODBCDriverPlugin"].requires.append("odbc::odbc")
+                self.cpp_info.components["qtQODBCDriverPlugin"].requires.append("odbc::odbc")
             else:
-                self.cpp_info.components["QODBCDriverPlugin"].system_libs.append("odbc32")
+                self.cpp_info.components["qtQODBCDriverPlugin"].system_libs.append("odbc32")
         networkReqs = []
         if self.options.openssl:
             networkReqs.append("openssl::openssl")
