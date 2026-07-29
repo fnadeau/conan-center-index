@@ -23,12 +23,14 @@ class MSYS2Conan(ConanFile):
     options = {
         "packages": ["ANY"],
         "exclude_files": ["ANY"],
+        "proxy_certificate": ["ANY"],  # Path to a PEM proxy CA certificate to inject into MSYS2's trust store
     }
     default_options = {
         # https://packages.msys2.org/packages/base-devel
         # GCC is needed for windres https://github.com/conan-io/conan/issues/12691
         "packages": "base-devel,gcc",
         "exclude_files": "*/link.exe",
+        "proxy_certificate": "None",
     }
 
     @property
@@ -87,6 +89,17 @@ class MSYS2Conan(ConanFile):
             self.run('taskkill /F /FI "MODULES eq msys-2.0.dll"', ignore_errors=True, env=None)
         return result
 
+    def _install_proxy_certificate(self):
+        """Append a proxy CA certificate (PEM) to the MSYS2 curl trust store so that pacman can reach the internet."""
+        cert_path = str(self.options.proxy_certificate)
+        if not os.path.isfile(cert_path):
+            raise ConanException(f"proxy_certificate file not found: {cert_path}")
+        ca_bundle = os.path.join(self._msys_root, "usr", "ssl", "certs", "ca-bundle.crt")
+        with open(cert_path, "r", encoding="utf-8") as f:
+            cert_content = f.read()
+        with open(ca_bundle, "a", encoding="utf-8") as f:
+            f.write("\n" + cert_content)
+
     def _upgrade_packages(self):
         self._pacman("--sync --refresh --sysupgrade --sysupgrade")
 
@@ -116,6 +129,9 @@ class MSYS2Conan(ConanFile):
             pass
 
         self._run_bash("echo") # Run automatic initial MSYS2 setup
+
+        if str(self.options.proxy_certificate) != "None":
+            self._install_proxy_certificate()
 
         # Follows https://www.msys2.org/docs/ci/
         self._upgrade_packages() # Core update (in case any core packages are outdated)
