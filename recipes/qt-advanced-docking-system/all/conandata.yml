@@ -1,4 +1,13 @@
 sources:
+  "5.0.0":
+    url: "https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/archive/refs/tags/5.0.0.tar.gz"
+    sha256: "12afa0f1eb32fb123568dc2435e8c12d0e87a49934d8ba4ef746f9de2bfc799c"
+  "4.5.0":
+    url: "https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/archive/refs/tags/4.5.0.tar.gz"
+    sha256: "a438810b9749684232fa29721857bb700167006f44407ab4dd51f5c90d171f09"
   "4.3.1":
     url: "https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/archive/refs/tags/4.3.1.tar.gz"
     sha256: "d7c244d9accaa78766e90124c0ce6054327b78625dae8ba2cfe22fc29dfba37d"
+patches:
+  "4.5.0":
+    - patch_file: "patches/fix-versioning-no-git.patch"
