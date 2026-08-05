@@ -69,11 +69,12 @@ class GStPluginsBaseConan(ConanFile):
             return False
         return dep.split("::")[0] not in ["glib", "gst-orc"]
 
-    def init(self):
+    def _import_options_from_yml(self):
         options_defaults = {}
         prev_count = 0
         while True:
-            for plugins_yml in Path(self.recipe_folder, "plugins").glob("*.yml"):
+            plugins_yml_files = Path(self.recipe_folder, "plugins").glob(f"{Version(self.version).major}.{Version(self.version).minor}.yml")
+            for plugins_yml in plugins_yml_files:
                 plugins_info = yaml.safe_load(plugins_yml.read_text())
                 for plugin, info in plugins_info.items():
                     main_opt = info.get("options", [plugin])[0]
@@ -126,13 +127,14 @@ class GStPluginsBaseConan(ConanFile):
     @cached_property
     def _all_options(self):
         options = set()
-        for plugins_yml in Path(self.recipe_folder, "plugins").glob("*.yml"):
+        for plugins_yml in Path(self.recipe_folder, "plugins").glob(f"{Version(self.version).major}.{Version(self.version).minor}.yml"):
             plugins_info = yaml.safe_load(plugins_yml.read_text())
             for plugin, info in plugins_info.items():
                 options.update(info.get("options", [plugin]))
         return options
 
     def config_options(self):
+        self._import_options_from_yml()
         if self.settings.os == "Windows":
             del self.options.fPIC
         if self.settings.os not in ["Linux", "FreeBSD"]:
@@ -165,7 +167,7 @@ class GStPluginsBaseConan(ConanFile):
         reqs = self._all_reqs
         self.requires(f"gstreamer/{self.version}", transitive_headers=True, transitive_libs=True)
         self.requires("glib/[^2.70.0]", transitive_headers=True, transitive_libs=True)
-        self.requires("gst-orc/0.4.41")
+        self.requires("gst-orc/[^0.4.41]")
 
         self.requires("zlib-ng/[^2.0]")
         if "libalsa" in reqs:

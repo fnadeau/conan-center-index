@@ -1,4 +1,7 @@
 sources:
+  "1.28.5":
+    url: "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-1.28.5.tar.xz"
+    sha256: "58b45d24a1d77b39d7bb7d9ccc6e2d76bbf28618998c335c163f18e6f94a9324"
   "1.26.0":
     url: "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-1.26.0.tar.xz"
     sha256: "9e18f139ef69ad0867c2dfbb8fe1d1736d76df11aac83f60e8d3adb1e2eaf03b"

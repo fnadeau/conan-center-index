@@ -44,11 +44,16 @@ class GStOrcConan(ConanFile):
     def generate(self):
         tc = MesonToolchain(self)
         tc.project_options["auto_features"] = "enabled"
-        tc.project_options["orc-backend"] = "all"
         tc.project_options["tools"] = "enabled" if self.options.tools else "disabled"
         tc.project_options["benchmarks"] = "disabled"
         tc.project_options["examples"] = "disabled"
-        tc.project_options["gtk_doc"] = "disabled"
+        # Version 0.4.42 removed the gtk-doc option and replaced it with hotdoc
+        if Version(self.version) >= "0.4.42":
+            tc.project_options["orc-target"] = "all"
+            tc.project_options["hotdoc"] = "disabled"
+        else:
+            tc.project_options["orc-backend"] = "all"
+            tc.project_options["gtk_doc"] = "disabled"
         tc.project_options["orc-test"] = "disabled"
         tc.project_options["tests"] = "disabled"
         tc.generate()

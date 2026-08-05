@@ -65,11 +65,12 @@ class GStPluginsGoodConan(ConanFile):
             return False
         return dep.split("::")[0] not in ["glib", "gst-orc"]
 
-    def init(self):
+    def _import_options_from_yml(self):
         options_defaults = {}
         prev_count = 0
         while True:
-            for plugins_yml in Path(self.recipe_folder, "plugins").glob("*.yml"):
+            plugins_yml_files = Path(self.recipe_folder, "plugins").glob(f"{Version(self.version).major}.{Version(self.version).minor}.yml")
+            for plugins_yml in plugins_yml_files:
                 plugins_info = yaml.safe_load(plugins_yml.read_text())
                 for plugin, info in plugins_info.items():
                     main_opt = info.get("options", [plugin])[0]
@@ -92,6 +93,7 @@ class GStPluginsGoodConan(ConanFile):
         export_conandata_patches(self)
 
     def config_options(self):
+        self._import_options_from_yml()
         if self.settings.os == "Windows":
             del self.options.fPIC
             del self.options.pulse
@@ -166,7 +168,7 @@ class GStPluginsGoodConan(ConanFile):
     @cached_property
     def _all_options(self):
         options = set()
-        for plugins_yml in Path(self.recipe_folder, "plugins").glob("*.yml"):
+        for plugins_yml in Path(self.recipe_folder, "plugins").glob(f"{Version(self.version).major}.{Version(self.version).minor}.yml"):
             plugins_info = yaml.safe_load(plugins_yml.read_text())
             for plugin, info in plugins_info.items():
                 options.update(info.get("options", [plugin]))
@@ -194,7 +196,7 @@ class GStPluginsGoodConan(ConanFile):
         if "gst-plugins-base" in reqs:
             self.requires(f"gst-plugins-base/{self.version}", transitive_headers=True, transitive_libs=True)
         if "gst-orc" in reqs:
-            self.requires("gst-orc/0.4.41")
+            self.requires("gst-orc/[^0.4.41]")
 
         if "zlib" in reqs:
             self.requires("zlib-ng/[^2.0]")

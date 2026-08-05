@@ -1,4 +1,7 @@
 sources:
+  "1.28.5":
+    url: "https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs/-/archive/gstreamer-1.28.5/gst-plugins-rs-gstreamer-1.28.5.tar.bz2"
+    sha256: "58203137e5075bfcafcb79b514750795996fc765a299964cf9f88961dd8a5002"
   "1.26.0":
     url: "https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs/-/archive/gstreamer-1.26.0/gst-plugins-rs-gstreamer-1.26.0.tar.bz2"
     sha256: "808d8baa2d556117d3fea28cc461260739866383241318daf18353a6007162c6"

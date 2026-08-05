@@ -1,4 +1,7 @@
 sources:
+  "1.28.5":
+    url: "https://gstreamer.freedesktop.org/src/gst-libav/gst-libav-1.28.5.tar.xz"
+    sha256: "452854656056f0b16511a1d9ad4f2679ff5e5a87c89f90cf7ee5dec005ddb1e4"
   "1.26.0":
     url: "https://gstreamer.freedesktop.org/src/gst-libav/gst-libav-1.26.0.tar.xz"
     sha256: "707a8b687ff5fddcee5b02415e2ec9b71b4ac44d0b7aec3b477364ceecbf1ecf"

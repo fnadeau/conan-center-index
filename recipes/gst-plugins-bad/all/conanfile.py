@@ -69,11 +69,12 @@ class GStPluginsBadConan(ConanFile):
             return False
         return dep.split("::")[0] not in ["glib", "gst-orc"]
 
-    def init(self):
+    def _import_options_from_yml(self):
         options_defaults = {}
         prev_count = 0
         while True:
-            for plugins_yml in Path(self.recipe_folder, "plugins").glob("*.yml"):
+            plugins_yml_files = Path(self.recipe_folder, "plugins").glob(f"{Version(self.version).major}.{Version(self.version).minor}.yml")
+            for plugins_yml in plugins_yml_files:
                 plugins_info = yaml.safe_load(plugins_yml.read_text())
                 for plugin, info in plugins_info.items():
                     main_opt = info.get("options", [plugin])[0]
@@ -128,13 +129,14 @@ class GStPluginsBadConan(ConanFile):
     @cached_property
     def _all_options(self):
         options = set()
-        for plugins_yml in Path(self.recipe_folder, "plugins").glob("*.yml"):
+        for plugins_yml in Path(self.recipe_folder, "plugins").glob(f"{Version(self.version).major}.{Version(self.version).minor}.yml"):
             plugins_info = yaml.safe_load(plugins_yml.read_text())
             for plugin, info in plugins_info.items():
                 options.update(info.get("options", [plugin]))
         return options
 
     def config_options(self):
+        self._import_options_from_yml()
         if self.settings.os == "Windows":
             del self.options.fPIC
             del self.options.shm
@@ -210,7 +212,7 @@ class GStPluginsBadConan(ConanFile):
         self.requires("glib/[^2.70.0]", transitive_headers=True, transitive_libs=True)
         self.requires(f"gst-plugins-base/{self.version}", transitive_headers=True, transitive_libs=True)
         if "gst-orc" in reqs:
-            self.requires("gst-orc/0.4.41")
+            self.requires("gst-orc/[^0.4.41]")
         if self.options.with_introspection:
             self.requires("glib-gir/[^2.82]")
 
@@ -333,6 +335,8 @@ class GStPluginsBadConan(ConanFile):
             self.requires("zbar/0.23.92")
         if "zxing-cpp" in reqs:
             self.requires("zxing-cpp/2.2.1")
+        if "tensorflow" in reqs:
+            self.requires("tensorflow-lite/[^2.15.0]")
 
     def validate_build(self):
         if self._is_enabled("qt6d3d11") or self._is_enabled("zxing") or self._is_enabled("nvcomp"):
@@ -430,6 +434,8 @@ class GStPluginsBadConan(ConanFile):
         tc.project_options["lv2"] = "disabled"  # lilv
         tc.project_options["magicleap"] = "disabled"  # proprietary
         tc.project_options["microdns"] = "disabled"  # libmicrodns
+        if Version(self.version) >= "1.28":
+            tc.project_options["mpeghdec"] = "disabled"  # mpeghdec
         tc.project_options["mpeg2enc"] = "disabled"  # mjpegtools (GPL)
         tc.project_options["mplex"] = "disabled"  # mjpegtools (GPL)
         tc.project_options["msdk"] = "disabled"  # Intel Media SDK or oneVPL SDK
@@ -447,9 +453,12 @@ class GStPluginsBadConan(ConanFile):
         tc.project_options["svthevcenc"] = "disabled"  # svt-hevc
         tc.project_options["teletext"] = "disabled"  # zvbi
         tc.project_options["voaacenc"] = "disabled"  # vo-aacenc
+        if Version(self.version) >= "1.28":
+            tc.project_options["vmaf"] = "disabled"  # libvmaf
         tc.project_options["webrtcdsp"] = "disabled"  # webrtc-audio-processing-1
         tc.project_options["webview2"] = "disabled"  # WebView2 Windows system lib
         tc.project_options["wpe"] = "disabled"  # wpe-webkit
+        tc.project_options["wpe2"] = "disabled"  # wpe2-webkit
 
         # D3D11 plugin options
         # option('d3d11-math', type : 'feature', value : 'auto', description : 'Enable DirectX SIMD Math support')
